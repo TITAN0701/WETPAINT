@@ -1,0 +1,15 @@
+node_modules/
+.npm-cache/
+
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+reports/latest/*
+reports/archive/*
+!reports/latest/.gitkeep
+!reports/archive/.gitkeep
+
+.tmp-cypress-run.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

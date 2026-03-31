@@ -1,0 +1,4 @@
+globalThis.statusString = {
+  success: '成功',
+  failure: '失敗'
+}

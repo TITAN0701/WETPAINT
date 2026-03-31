@@ -1,0 +1,16 @@
+{
+  "name": "wetpaint",
+  "private": true,
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "test:e2e": "cypress run",
+    "test:report": "cypress run"
+  },
+  "devDependencies": {
+    "cypress": "^15.12.0",
+    "cypress-mochawesome-reporter": "^4.0.2",
+    "cypress-test-email": "^1.5.2"
+  }
+}
