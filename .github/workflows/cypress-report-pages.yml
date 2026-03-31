@@ -40,7 +40,7 @@ jobs:
       - name: Run Cypress and generate HTML report
         id: cypress
         continue-on-error: true
-        uses: cypress-io/github-action@v7
+        uses: cypress-io/github-action@v6
         with:
           install: false
           command: npm run test:report
