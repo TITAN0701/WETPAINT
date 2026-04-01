@@ -59,92 +59,94 @@ jobs:
             $sha = "${{ github.sha }}"
             $refName = "${{ github.ref_name }}"
 
-            @"
-            <!doctype html>
-            <html lang="en">
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>WETPAINT Cypress Report</title>
-              <style>
-                :root {
-                  color-scheme: light;
-                  --bg: #f4f1ea;
-                  --card: #fffdf8;
-                  --text: #1f1a17;
-                  --muted: #6b625b;
-                  --accent: #b84c2a;
-                  --border: #dfd6cb;
-                }
-                * { box-sizing: border-box; }
-                body {
-                  margin: 0;
-                  font-family: Georgia, "Times New Roman", serif;
-                  background:
-                    radial-gradient(circle at top right, #f6d9bc 0, transparent 30%),
-                    linear-gradient(180deg, #f7f3ec 0%, var(--bg) 100%);
-                  color: var(--text);
-                }
-                main {
-                  max-width: 760px;
-                  margin: 48px auto;
-                  padding: 0 20px;
-                }
-                .card {
-                  background: var(--card);
-                  border: 1px solid var(--border);
-                  border-radius: 18px;
-                  padding: 28px;
-                  box-shadow: 0 16px 48px rgba(31, 26, 23, 0.08);
-                }
-                h1 {
-                  margin-top: 0;
-                  margin-bottom: 12px;
-                  font-size: 2rem;
-                }
-                p, li {
-                  line-height: 1.6;
-                }
-                .meta {
-                  color: var(--muted);
-                  margin-bottom: 20px;
-                }
-                .status {
-                  display: inline-block;
-                  padding: 6px 10px;
-                  border-radius: 999px;
-                  background: #fbe3d8;
-                  color: var(--accent);
-                  font-weight: 700;
-                  margin-bottom: 18px;
-                }
-                a {
-                  color: var(--accent);
-                }
-                code {
-                  background: #f3ece4;
-                  padding: 2px 6px;
-                  border-radius: 6px;
-                }
-              </style>
-            </head>
-            <body>
-              <main>
-                <section class="card">
-                  <div class="status">Report not generated</div>
-                  <h1>WETPAINT Cypress Report</h1>
-                  <p class="meta">Repository: $repo<br>Branch: $refName<br>Commit: $sha</p>
-                  <p>The workflow completed without producing <code>reports/latest/index.html</code>.</p>
-                  <p>This fallback page was published so the latest GitHub Pages URL still stays readable.</p>
-                  <ul>
-                    <li>Cypress step outcome: <strong>$status</strong></li>
-                    <li>Open the workflow run for logs and screenshots: <a href="$runUrl">$runUrl</a></li>
-                  </ul>
-                </section>
-              </main>
-            </body>
-            </html>
-            "@ | Set-Content -Path $reportPath -Encoding UTF8
+            $fallbackHtml = @(
+              '<!doctype html>',
+              '<html lang="en">',
+              '<head>',
+              '  <meta charset="utf-8">',
+              '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+              '  <title>WETPAINT Cypress Report</title>',
+              '  <style>',
+              '    :root {',
+              '      color-scheme: light;',
+              '      --bg: #f4f1ea;',
+              '      --card: #fffdf8;',
+              '      --text: #1f1a17;',
+              '      --muted: #6b625b;',
+              '      --accent: #b84c2a;',
+              '      --border: #dfd6cb;',
+              '    }',
+              '    * { box-sizing: border-box; }',
+              '    body {',
+              '      margin: 0;',
+              '      font-family: Georgia, "Times New Roman", serif;',
+              '      background:',
+              '        radial-gradient(circle at top right, #f6d9bc 0, transparent 30%),',
+              '        linear-gradient(180deg, #f7f3ec 0%, var(--bg) 100%);',
+              '      color: var(--text);',
+              '    }',
+              '    main {',
+              '      max-width: 760px;',
+              '      margin: 48px auto;',
+              '      padding: 0 20px;',
+              '    }',
+              '    .card {',
+              '      background: var(--card);',
+              '      border: 1px solid var(--border);',
+              '      border-radius: 18px;',
+              '      padding: 28px;',
+              '      box-shadow: 0 16px 48px rgba(31, 26, 23, 0.08);',
+              '    }',
+              '    h1 {',
+              '      margin-top: 0;',
+              '      margin-bottom: 12px;',
+              '      font-size: 2rem;',
+              '    }',
+              '    p, li {',
+              '      line-height: 1.6;',
+              '    }',
+              '    .meta {',
+              '      color: var(--muted);',
+              '      margin-bottom: 20px;',
+              '    }',
+              '    .status {',
+              '      display: inline-block;',
+              '      padding: 6px 10px;',
+              '      border-radius: 999px;',
+              '      background: #fbe3d8;',
+              '      color: var(--accent);',
+              '      font-weight: 700;',
+              '      margin-bottom: 18px;',
+              '    }',
+              '    a {',
+              '      color: var(--accent);',
+              '    }',
+              '    code {',
+              '      background: #f3ece4;',
+              '      padding: 2px 6px;',
+              '      border-radius: 6px;',
+              '    }',
+              '  </style>',
+              '</head>',
+              '<body>',
+              '  <main>',
+              '    <section class="card">',
+              '      <div class="status">Report not generated</div>',
+              '      <h1>WETPAINT Cypress Report</h1>',
+              "      <p class=""meta"">Repository: $repo<br>Branch: $refName<br>Commit: $sha</p>",
+              '      <p>The workflow completed without producing <code>reports/latest/index.html</code>.</p>',
+              '      <p>This fallback page was published so the latest GitHub Pages URL still stays readable.</p>',
+              '      <ul>',
+              "        <li>Cypress step outcome: <strong>$status</strong></li>",
+              "        <li>Open the workflow run for logs and screenshots: <a href=""$runUrl"">$runUrl</a></li>",
+              '      </ul>',
+              '    </section>',
+              '  </main>',
+              '</body>',
+              '</html>'
+            ) -join "`n"
+
+            $fallbackHtml | Set-Content -Path $reportPath -Encoding UTF8
           }
 
           New-Item -ItemType File -Path "reports/latest/.nojekyll" -Force | Out-Null
