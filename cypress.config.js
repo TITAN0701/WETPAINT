@@ -3,7 +3,7 @@ module.exports = {
   reporter: 'cypress-mochawesome-reporter',
   reporterOptions: {
     reportDir: 'reports/latest',
-    reportFilename: 'index',
+    reportFilename: 'report',
     overwrite: true,
     charts: true,
     reportPageTitle: 'WETPAINT Cypress Test Report',

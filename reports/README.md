@@ -1,8 +1,9 @@
 # Test Reports
 
-Generated Cypress reports are written to:
+Generated Cypress report files are written to:
 
-`reports/latest/index.html`
+- `reports/latest/index.html` for the landing page
+- `reports/latest/report.html` for the Mochawesome HTML report
 
 Run the suite with:
 
@@ -16,7 +17,7 @@ The generated HTML report is self-contained for normal sharing use:
 - upload the file to a shared drive
 - publish the `reports/latest` folder on any static file host
 
-If you want to keep historical copies, duplicate `reports/latest/index.html` into a dated folder under `reports/archive/`.
+If you want to keep historical copies, duplicate the `reports/latest` contents into a dated folder under `reports/archive/`.
 
 ## GitHub Pages
 
@@ -25,6 +26,7 @@ This repo also includes a GitHub Actions workflow at:
 `.github/workflows/cypress-report-pages.yml`
 
 It runs a manually selected Cypress spec, publishes `reports/latest` to GitHub Pages, and gives you a shareable URL.
+The GitHub Pages homepage shows the latest run status, spec path, run time, commit, and links to both the workflow run and the HTML report.
 
 Before it works, enable GitHub Pages in the repository settings:
 
