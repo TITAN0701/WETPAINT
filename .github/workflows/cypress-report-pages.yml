@@ -1,4 +1,5 @@
 name: Cypress Report Pages
+run-name: Report #${{ github.run_number }} | ${{ inputs.spec_path }}
 
 on:
   workflow_dispatch:
@@ -64,8 +65,11 @@ jobs:
           $runNumber = "${{ github.run_number }}"
           $runAttempt = "${{ github.run_attempt }}"
           $specPath = "${{ inputs.spec_path }}"
-          $generatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+          $generatedAtUtc = (Get-Date).ToUniversalTime()
+          $taipeiTz = [System.TimeZoneInfo]::FindSystemTimeZoneById('Asia/Taipei')
+          $generatedAt = [System.TimeZoneInfo]::ConvertTimeFromUtc($generatedAtUtc, $taipeiTz).ToString("yyyy/MM/dd HH:mm:ss '(UTC+8)'")
           $reportExists = Test-Path $reportPath
+          $pageTitle = "WETPAINT Cypress Report - $generatedAt"
 
           $statusLabel = if ($status -eq 'success') { 'Success' } else { 'Failed' }
           $statusClass = if ($status -eq 'success') { 'success' } else { 'failed' }
@@ -82,7 +86,7 @@ jobs:
             '<head>',
             '  <meta charset="utf-8">',
             '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-            '  <title>WETPAINT Cypress Report</title>',
+            "  <title>$pageTitle</title>",
             '  <style>',
             '    :root {',
             '      color-scheme: light;',
@@ -202,7 +206,7 @@ jobs:
             '  <main>',
             '    <section class="card">',
             "      <div class=""status $statusClass"">$statusLabel</div>",
-            '      <h1>WETPAINT Cypress Report</h1>',
+            "      <h1>$pageTitle</h1>",
             "      <p class=""muted"">$reportSummary</p>",
             '      <div class="grid">',
             "        <div class=""item""><strong>Spec</strong><code>$specPath</code></div>",
