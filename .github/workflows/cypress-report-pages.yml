@@ -45,7 +45,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           install: false
-          command: npm run test:report -- --spec "${{ inputs.spec_path }}"
+          command: npm run test:report -- --spec ${{ inputs.spec_path }}
 
       - name: Build landing page
         if: always()
