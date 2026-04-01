@@ -45,6 +45,78 @@ class Invitelist extends firstpagemanage{
         return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    normalizeComparableText(text) {
+        return String(text ?? '').replace(/\s+/g, '').trim();
+    }
+
+    findDialogFieldLabel($dialogEl, label) {
+        const labelPattern = new RegExp(`^\\s*${this.escapeRegExp(label)}\\s*$`);
+
+        return $dialogEl.find('label:visible,span:visible,p:visible,div:visible')
+            .filter((_, el) => labelPattern.test(Cypress.$(el).text()))
+            .first();
+    }
+
+    findFieldControl($dialogEl, $labelEl, selector, orderedFieldLabels = []) {
+        let $control = Cypress.$();
+        let $cursor = $labelEl;
+
+        while ($cursor.length && !$cursor.is($dialogEl) && !$cursor.is('body')) {
+            $control = $cursor.find(selector).filter(':visible').first();
+            if ($control.length) {
+                break;
+            }
+
+            $control = $cursor.siblings().find(selector).filter(':visible').first();
+            if ($control.length) {
+                break;
+            }
+
+            $cursor = $cursor.parent();
+        }
+
+        if (!$control.length && orderedFieldLabels.length > 0) {
+            const $orderedLabels = $dialogEl.find('label:visible,span:visible,p:visible,div:visible')
+                .filter((_, el) => orderedFieldLabels.includes(Cypress.$(el).text().trim()));
+            const labelText = $labelEl.text().trim();
+            const labelIndex = $orderedLabels.toArray().findIndex((el) => Cypress.$(el).text().trim() === labelText);
+            const $allControls = $dialogEl.find(selector).filter(':visible');
+
+            if (labelIndex >= 0 && labelIndex < $allControls.length) {
+                $control = $allControls.eq(labelIndex);
+            }
+        }
+
+        return $control;
+    }
+
+    setDialogInputValue(label, value){
+        const dialogSelector = 'div[role="dialog"][data-state="open"]';
+        const normalizedValue = String(value ?? '').trim();
+        const inputValue = normalizedValue.replace(/\D/g, '') || normalizedValue;
+
+        cy.get(dialogSelector).filter(':visible').last().should('be.visible').then(($dialog) => {
+            const $dialogEl = Cypress.$($dialog);
+            const $labelEl = this.findDialogFieldLabel($dialogEl, label);
+
+            expect($labelEl.length, `label "${label}"`).to.be.greaterThan(0);
+
+            const $input = this.findFieldControl(
+                $dialogEl,
+                $labelEl,
+                'input:visible:not([type="hidden"]):not([readonly]), textarea:visible:not([readonly])',
+                ['有效期限', '最大使用數量', '身份角色選項']
+            );
+
+            expect($input.length, `input for label "${label}"`).to.be.greaterThan(0);
+
+            cy.wrap($input.first())
+                .click({ force: true })
+                .clear({ force: true })
+                .type(inputValue, { force: true });
+        });
+    }
+
     selectFilterDropdown(label, value){
         const dialogSelector = 'div[role="dialog"][data-state="open"]';
         const valueText = String(value).trim();
@@ -53,49 +125,26 @@ class Invitelist extends firstpagemanage{
 
         cy.get(dialogSelector).filter(':visible').last().should('be.visible').then(($dialog) => {
             const $dialogEl = Cypress.$($dialog);
-            const labelPattern = new RegExp(`^\\s*${this.escapeRegExp(label)}\\s*$`);
             const fieldLabels = ['排序方式', '屬性', '有效期限', '最大使用數量', '身份角色選項'];
-            
-
-            const $labelEl = $dialogEl.find('label:visible,span:visible,p:visible,div:visible')
-                .filter((_, el) => labelPattern.test(Cypress.$(el).text()))
-                .first();
+            const $labelEl = this.findDialogFieldLabel($dialogEl, label);
 
             expect($labelEl.length, `label "${label}"`).to.be.greaterThan(0);
 
-            let $trigger = Cypress.$();
-            let $cursor = $labelEl;
-            while ($cursor.length && !$cursor.is($dialogEl) && !$cursor.is('body')) {
-                $trigger = $cursor.find(triggerSelector).filter(':visible').first();
-                if ($trigger.length) {
-                    break;
-                }
-
-                $trigger = $cursor.siblings().find(triggerSelector).filter(':visible').first();
-                if ($trigger.length) {
-                    break;
-                }
-
-                $cursor = $cursor.parent();
-            }
-
-            if (!$trigger.length) {
-                const $orderedLabels = $dialogEl.find('label:visible,span:visible,p:visible,div:visible')
-                    .filter((_, el) => fieldLabels.includes(Cypress.$(el).text().trim()));
-                const labelIndex = $orderedLabels.toArray().findIndex((el) => Cypress.$(el).text().trim() === label);
-                const $allTriggers = $dialogEl.find(triggerSelector).filter(':visible');
-
-                if (labelIndex >= 0 && labelIndex < $allTriggers.length) {
-                    $trigger = $allTriggers.eq(labelIndex);
-                }
-            }
+            const $trigger = this.findFieldControl($dialogEl, $labelEl, triggerSelector, fieldLabels);
 
             expect($trigger.length, `select trigger for label "${label}"`).to.be.greaterThan(0);
             cy.wrap($trigger.first()).click({ force: true });
         });
 
-        cy.get(openPanelSelector).filter(':visible').last().should('be.visible').within(() => {
-            cy.contains(new RegExp(`^\\s*${this.escapeRegExp(valueText)}\\s*$`)).should('be.visible').click({ force: true });
+        cy.get(openPanelSelector).filter(':visible').last().should('be.visible').then(($panel) => {
+            const normalizedTarget = this.normalizeComparableText(valueText);
+            const $option = Cypress.$($panel)
+                .find('[role="option"], [data-radix-collection-item], [data-value], li, button, div, span')
+                .filter((_, el) => this.normalizeComparableText(Cypress.$(el).text()) === normalizedTarget)
+                .first();
+
+            expect($option.length, `option "${valueText}"`).to.be.greaterThan(0);
+            cy.wrap($option).scrollIntoView().click({ force: true });
         });
     }
 
@@ -122,7 +171,7 @@ class Invitelist extends firstpagemanage{
         });
         // 有效期限: 1天、7天、30天；永不 / 最大使用數量: 1次、5次、10次、20次、沒有限制  / 身分角色選項: 管理者、局處、機構、操作人員、家長
         this.selectFilterDropdown('有效期限', detail1);
-        this.selectFilterDropdown('最大使用數量', detail2);
+        this.setDialogInputValue('最大使用數量', detail2);
         this.selectFilterDropdown('身份角色選項', detail3);
 
         cy.contains('button', ' 產生 ').should('exist').click();

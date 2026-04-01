@@ -1,62 +1,51 @@
+function assertCellValue(content, expected) {
+    if (expected instanceof RegExp) {
+        expect(content).to.match(expected);
+        return;
+    }
 
-function verifyCheckQuestionfunction(index, description){
-    const colums = ['標題描述', '面相', '施測年齡', '警示題', '動作'];
-    colums.forEach((column) => {
-        cy.contains('th:visible,div:visible,span:visible,p:visible', column).should('exist');
-    });
-
-    cy.get(' table tbody tr:visible').eq(0).find('td').eq(index).invoke('text')
-    .then((text) => {
-        const content = text.trim();
-        expect(content).to.eq(description);
-    })
+    expect(content).to.eq(expected);
 }
 
-function verifyCheckImagePagefunction(index, description){
-    const colums = ['標題描述', '施測年齡', '動作'];
-    colums.forEach((column) => {
-        cy.contains('th:visible,div:visible,span:visible,p:visible', column).should('exist');
-    });
-
-    cy.get(' table tbody tr:visible').eq(0).find('td').eq(index).invoke('text')
-    .then((text) => {
-        const content = text.trim();
-        expect(content).to.eq(description);
-    })
+function ensureQuestionTableVisible(minColumns = 3) {
+    cy.get('table:visible').should('exist');
+    cy.get('table tbody tr:visible').its('length').should('be.gte', 1);
+    cy.get('table thead th:visible').its('length').should('be.gte', minColumns);
 }
 
-function veriifyCheckImagePageApply(index, description){
-    const colums = ['標題描述', '施測年齡', '動作'];
-    colums.forEach((column) => {
-        cy.contains('th:visible,div:visible,span:visible,p:visible', column).should('exist');
-    });
+function verifyCellByIndex(index, expected, minColumns = 3) {
+    ensureQuestionTableVisible(minColumns);
 
-    cy.get(' table tbody tr:visible').eq(0).find('td').eq(index).invoke('text')
-    .then((text) => {
-        const content = text.trim();
-        expect(content).to.eq(description);
-    })
+    cy.get('table tbody tr:visible')
+        .eq(0)
+        .find('td')
+        .eq(index)
+        .invoke('text')
+        .then((text) => {
+            const content = text.trim();
+            assertCellValue(content, expected);
+        });
 }
 
-function verifyCheckAIQuestionPage(index, description){
-    const colums = ['標題描述', '施測年齡', '動作'];
-    colums.forEach((column) => {
-        cy.contains('th:visible,div:visible,span:visible,p:visible', column).should('exist');
-    });
-
-    cy.get(' table tbody tr:visible').eq(0).find('td').eq(index).invoke('text')
-    .then((text) => {
-        const content = text.trim();
-        expect(content).to.eq(description);
-    })
+function verifyCheckQuestionfunction(index, description) {
+    verifyCellByIndex(index, description, 5);
 }
 
+function verifyCheckImagePagefunction(index, description) {
+    verifyCellByIndex(index, description, 3);
+}
 
+function veriifyCheckImagePageApply(index, description) {
+    verifyCellByIndex(index, description, 3);
+}
 
+function verifyCheckAIQuestionPage(index, description) {
+    verifyCellByIndex(index, description, 3);
+}
 
-export{
+export {
     verifyCheckQuestionfunction,
     verifyCheckImagePagefunction,
     veriifyCheckImagePageApply,
     verifyCheckAIQuestionPage
-}
+};

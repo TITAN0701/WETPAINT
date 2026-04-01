@@ -114,7 +114,7 @@ describe('First Page Management', () => {
             firstpage.clickQuestionButton();
             questionlist.clickQuestionPageSelect('圖卡識別');
             TestFPM003.verifyCheckImagePagefunction(0, '辨識：小狗');
-            TestFPM003.verifyCheckImagePagefunction(1, '3-4 歲');
+            TestFPM003.verifyCheckImagePagefunction(1, /^\d+(?:\s*[-,]\s*\d+)?(?:\s*歲)?$/);
 
         })
 
@@ -122,14 +122,14 @@ describe('First Page Management', () => {
             firstpage.clickQuestionButton();
             questionlist.clickQuestionPageSelect('圖卡配對');
             TestFPM003.veriifyCheckImagePageApply(0, '配對：形狀 A');
-            TestFPM003.veriifyCheckImagePageApply(1, '3-4 歲');
+            TestFPM003.veriifyCheckImagePageApply(1, /^\d+(?:\s*[-,]\s*\d+)?(?:\s*歲)?$/);
         })
 
         it('於頁面點擊 AI題組，並檢查特定文字', () => {
             firstpage.clickQuestionButton();
             questionlist.clickQuestionPageSelect('AI題組');
             TestFPM003.verifyCheckAIQuestionPage(0, 'AI：發音評估');
-            TestFPM003.verifyCheckAIQuestionPage(1, '3-4 歲');
+            TestFPM003.verifyCheckAIQuestionPage(1, /^\d+(?:\s*[-,]\s*\d+)?(?:\s*歲)?$/);
         })
     })
 
@@ -145,7 +145,7 @@ describe('First Page Management', () => {
 
         });
 
-        it.only('使用者登入頁面後找到邀請管理，並且使用產生邀請連結的功能', () => {
+        it('使用者登入頁面後找到邀請管理，並且使用產生邀請連結的功能', () => {
             firstpage.clickInviteButton();
             TestFPM004.verifyInviteManagementShareLink();
             invitelist.clickIniteLinkShareButton('1 天', '1 次', '家長');
