@@ -1,11 +1,13 @@
 name: Cypress Report Pages
 
 on:
-  push:
-    branches:
-      - main
-      - master
   workflow_dispatch:
+    inputs:
+      spec_path:
+        description: Cypress spec path to run
+        required: true
+        default: cypress/e2e/features/common/login.cy.js
+        type: string
 
 permissions:
   contents: read
@@ -43,7 +45,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           install: false
-          command: npm run test:report
+          command: npm run test:report -- --spec "${{ inputs.spec_path }}"
 
       - name: Ensure Pages payload exists
         if: always()

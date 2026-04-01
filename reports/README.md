@@ -24,12 +24,23 @@ This repo also includes a GitHub Actions workflow at:
 
 `.github/workflows/cypress-report-pages.yml`
 
-It runs Cypress, publishes `reports/latest` to GitHub Pages, and gives you a shareable URL.
+It runs a manually selected Cypress spec, publishes `reports/latest` to GitHub Pages, and gives you a shareable URL.
 
 Before it works, enable GitHub Pages in the repository settings:
 
 1. Go to `Settings -> Pages`
 2. In `Build and deployment`, set `Source` to `GitHub Actions`
-3. Push to `main` or `master`, or run the workflow manually from the `Actions` tab
+3. Open the `Actions` tab and run `Cypress Report Pages`
+4. Enter the spec path you want to run, for example:
+
+```text
+cypress/e2e/features/common/login.cy.js
+```
+
+or:
+
+```text
+cypress/e2e/features/FirstPage_Manage/FPM.cy.js
+```
 
 If Cypress fails before the HTML report is generated, the workflow still publishes a fallback status page so the GitHub Pages URL remains readable.
