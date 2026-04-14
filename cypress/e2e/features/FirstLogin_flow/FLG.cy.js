@@ -6,6 +6,8 @@ import FirstPage from '../../page-objects/firstpage_manage/firstpagemanage';
 import * as TestFLG001 from './FLG-001';
 import * as TestFLG002 from './FLG-002';
 import * as TestFLG003 from './FLG-003';
+import * as TestRG006 from '../Register_Account/RG-006';
+import { buildValidTaiwanId } from '../FrontDesk_flow/FDT_helpers';
 
 describe('First Login flow', () => {
     const flgsys = new FLGsys();
@@ -18,34 +20,58 @@ describe('First Login flow', () => {
         cy.visit('/login');
     });
 
-    describe.skip('帳號註冊流程', () => {
-        it('先註冊一個新帳號，後續才能繼續測試首次登入的測試流程', () => {
-            loginSys.clickRegisterButton();
-            regsys.clickRegisterNameinput('FlgTest1');
-            regsys.clickRegisterPasswordinput('TestPassword123', 'TestPassword123');
-            regsys.clickRegisterGenderinput('female');
-            regsys.clickRegisterEmailinput('p9geepmczk@pxdmail.net');
-            regsys.InputtypeRegisterVerificationCode('11111111');
-            regsys.clickRegisterPhoneinput('0955545010');
-            regsys.clickAndCheckRegisterButton();
-            regsys.clickAgressCheckButton();
-            regsys.clickConfirmRegisterButton();
+    describe('Registration setup', () => {
+        it('註冊一個新帳號', () => {
+            const registerName = 'FlgTest12';
+            const registerPassword = 'TestPassword123';
+            const registerPhone = '0923957635';
+
+            TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
+                loginSys.clickRegisterButton();
+                regsys.clickRegisterNameinput(registerName);
+                regsys.clickRegisterPasswordinput(registerPassword, registerPassword);
+                regsys.clickRegisterGenderinput('female');
+                regsys.clickRegisterEmailinput(emailAddress);
+                regsys.clickRegisterPhoneinput(registerPhone);
+
+                TestRG006.verifysetupsendotpAPI();
+                regsys.clickRegisterVerificationCodeInput('email');
+                TestRG006.verifyGetEmailotpAPI({ expectedStatusCode: 200 });
+
+                TestRG006.verifyGetRegisterOtpFromMailSlurp(inboxId).then((otp) => {
+                    regsys.InputtypeRegisterVerificationCode(otp);
+                    regsys.clickAndCheckRegisterButton();
+                    regsys.clickAgressCheckButton();
+                    regsys.clickConfirmRegisterButton();
+
+                    return TestRG006.saveLatestRegisterAccount({
+                        email: emailAddress,
+                        phone: registerPhone,
+                        loginId: registerPhone,
+                        password: registerPassword,
+                        inboxId,
+                        source: 'mailslurp',
+                    });
+                });
+            });
         });
     });
 
-    describe.skip('FLG-001 首次登入引導頁', () => {
-        it('登入後顯示首次登入導引', () => {
-            loginSys.clickaccountnumber('p9geepmczk@pxdmail.net');
-            loginSys.clickpassword('TestPassword123');
-            TestFLG001.verifyRequestFirstPagAPI();
-            loginSys.clickLoginButton();
+    describe('FLG-001 首次登入新帳號驗證', () => {
+        it('shows the first login guide after login', () => {
+            TestRG006.loginWithLatestRegisterAccount({
+                beforeLogin: () => {
+                    TestFLG001.verifyRequestFirstPagAPI();
+                },
+            });
+
             TestFLG001.verifyGetReposnsePageAPI();
             TestFLG001.verifyFirstLoginMessage();
         });
     });
 
-    describe('FLG-002 成功建立使用者資訊', () => {
-        it('成功建立：使用者身分、孩童分析選項、孩童專屬檔案', () => {
+    describe('FLG-002 首次登入帳號並設定孩童資料', () => {
+        it('creates user info from the onboarding flow', () => {
             const roleName = '家長';
             const domainName = '動作發展';
             const runId = Date.now().toString().slice(-6);
@@ -54,19 +80,20 @@ describe('First Login flow', () => {
                 childName: `E2Test${runId}`,
                 childBorncity: '臺北市',
                 childBornstate: '大安區',
-                childselfcode: `A${Date.now().toString().slice(-9)}`,
+                childselfcode: buildValidTaiwanId('female', `${Date.now()}${runId}`),
                 childYeartime: '2024-01-15',
                 childGender: '女',
                 over37Week: '是',
-                childweight: '≥2500g',
+                childweight: '2500g',
                 peopletype: '否',
                 sameHomeResidence: true,
             };
-            //要先創建一個新帳號才能進去做測試
-            loginSys.clickaccountnumber('parent@example.com');
-            loginSys.clickpassword('password123');
-            TestFLG002.setupCreateUserInfoInterceptors();
-            loginSys.clickLoginButton();
+
+            TestRG006.loginWithLatestRegisterAccount({
+                beforeLogin: () => {
+                    TestFLG002.setupCreateUserInfoInterceptors();
+                },
+            });
 
             flgsys.completeOnboardingFromCurrentStep({
                 roleName,
@@ -74,19 +101,24 @@ describe('First Login flow', () => {
                 formData,
                 confirmType: 'yes',
                 completeType: 'no',
-            });
+            }).then((result) => {
+                if (result?.skipped) {
+                    TestFLG002.verifyAlreadyOnHomePage();
+                    return;
+                }
 
-            TestFLG002.verifyCreateUserInfoSuccess({
-                roleName,
-                domainName,
-                childName: formData.childName,
-                childselfcode: formData.childselfcode,
+                TestFLG002.verifyCreateUserInfoSuccess({
+                    roleName,
+                    domainName,
+                    childName: formData.childName,
+                    childselfcode: formData.childselfcode,
+                });
             });
         });
     });
 
-    describe.skip('FLG-003 檢查孩童年齡判斷', () => {
-        it('用 API 出生日期比對孩童列表年齡', () => {
+    describe('FLG-003 進入管理帳號，檢視最新的帳號年齡是否一致', () => {
+        it('verifies the child list age matches the birth date from API', () => {
             const account = Cypress.env('FLG003_ACCOUNT') || '0999999993';
             const password = Cypress.env('FLG003_PASSWORD') || 'password123';
 
@@ -94,7 +126,7 @@ describe('First Login flow', () => {
             loginSys.clickpassword(password);
             TestFLG003.setupChildListAgeApiIntercepts();
             loginSys.clickLoginButton();
-            //用現在日期計算系統給的年齡並且判斷
+
             firstPage.clickChildtable();
             TestFLG003.verifyAnyChildAgeMatchesBirthDateFromApi();
         });

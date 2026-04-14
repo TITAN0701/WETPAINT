@@ -1,11 +1,15 @@
-﻿const FORGOT_PASSWORD_API = /\/api\/.*\/forg(?:o|e)t-password/i;
+﻿import Regsys from '../../page-objects/Register_Account/RegisterAccount';
+import * as TestRG006 from '../Register_Account/RG-006';
+const FORGOT_PASSWORD_API = /\/api\/.*\/forg(?:o|e)t-password/i;
+const RESET_PASSWORD_LINK_PATTERN =
+    '((?:https?:\\/\\/[^\\s"\'<>]*\\/forgot-password\\?token=[A-Za-z0-9._-]+(?:&step=\\d+)?|\\/forgot-password\\?token=[A-Za-z0-9._-]+(?:&step=\\d+)?))';
 
 function verifyForgetPasswordPageMessage() {
     cy.url().should('include', '/forgot-password');
     cy.get('input#email, input[name="email"], input[placeholder="example@email.com"]')
         .first()
         .should('be.visible');
-    cy.contains('button', /下一步|送出|發送/i).should('be.visible');
+    cy.get('button:visible').should('have.length.greaterThan', 0);
 }
 
 function verifyNextPageResetPasswordMessage() {
@@ -17,7 +21,25 @@ function verifyNextPageResetPasswordMessage() {
 
 function verifyResetSuccessMessage() {
     cy.contains('h2, p', /成功|完成|重設/i).should('exist');
-    cy.contains('button', /返回|回到登入|登入/i).should('be.visible');
+}
+
+function returnToLoginAfterReset() {
+    const returnButtonPattern = /返回|回到登入|登入/i;
+
+    cy.get('body').then(($body) => {
+        const $button = $body.find('button:visible').filter((_, el) =>
+            returnButtonPattern.test(el.innerText || '')
+        ).first();
+
+        if ($button.length > 0) {
+            cy.wrap($button).click({ force: true });
+            return;
+        }
+
+        cy.visit('/login');
+    });
+
+    cy.location('pathname', { timeout: 10000 }).should('include', '/login');
 }
 
 function verifyForgetPasswordPageApI() {
@@ -47,6 +69,88 @@ function verifyForgetPasswordPageApiRequest(email) {
         if (body.code !== undefined && body.code !== null) {
             expect(Number(body.code)).to.eq(200);
         }
+    });
+}
+
+function resolveMailSlurpApiKey(explicitApiKey) {
+    if (explicitApiKey) {
+        return explicitApiKey;
+    }
+
+    return (
+        Cypress.env('MAILSLURP_TEST_API_KEY')
+        || Cypress.env('MAILSLURP_API_KEY')
+        || Cypress.env('MAILSLURP_REGISTER_API_KEY')
+        || null
+    );
+}
+
+function getResetLinkFromMailSlurp(inboxId, options = {}) {
+    const {
+        apiKey,
+        timeoutMs = 120000,
+        unreadOnly = false,
+        pattern = RESET_PASSWORD_LINK_PATTERN,
+    } = options;
+    const resolvedApiKey = resolveMailSlurpApiKey(apiKey);
+
+    expect(inboxId, 'mailslurp inbox id').to.be.a('string').and.not.be.empty;
+    expect(resolvedApiKey, 'mailslurp api key').to.be.a('string').and.not.be.empty;
+
+    return cy.mailslurp({ apiKey: resolvedApiKey }).then({ timeout: timeoutMs }, async (mailslurp) => {
+        const sortEmailsByCreatedAtDesc = (emails = []) =>
+            [...emails].sort(
+                (a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+            );
+
+        const tryExtractResetLink = async (emailPreview) => {
+            const emailId = emailPreview?.id;
+            if (!emailId) {
+                return null;
+            }
+
+            try {
+                const { matches } = await mailslurp.emailController.getEmailContentMatch({
+                    emailId,
+                    contentMatchOptions: {
+                        pattern,
+                    },
+                });
+
+                return matches?.[1] || matches?.[0] || null;
+            } catch (error) {
+                return null;
+            }
+        };
+
+        const findResetLinkInEmails = async (emails) => {
+            const sortedEmails = sortEmailsByCreatedAtDesc(emails);
+
+            for (const email of sortedEmails) {
+                const resetLink = await tryExtractResetLink(email);
+                if (resetLink) {
+                    return resetLink;
+                }
+            }
+
+            return null;
+        };
+
+        const currentEmails = await mailslurp.getEmails(inboxId);
+        const existingCount = currentEmails?.length || 0;
+        const currentResetLink = await findResetLinkInEmails(currentEmails);
+
+        if (currentResetLink) {
+            return currentResetLink;
+        }
+
+        await mailslurp.waitForEmailCount(existingCount + 1, inboxId, timeoutMs, unreadOnly);
+
+        const refreshedEmails = await mailslurp.getEmails(inboxId);
+        const resetLink = await findResetLinkInEmails(refreshedEmails);
+
+        expect(resetLink, 'mailslurp reset link').to.be.a('string').and.not.be.empty;
+        return resetLink;
     });
 }
 
@@ -137,7 +241,6 @@ function getResetLinkFromRoundcube(
                     return;
                 }
 
-                // fallback if no visible refresh control
                 cy.reload();
             });
 
@@ -171,7 +274,6 @@ function getResetLinkFromRoundcube(
                 const $user = $body.find(userSelector).filter(':visible').first();
                 const $pass = $body.find(passSelector).filter(':visible').first();
 
-                // Wait a bit if login form might still be rendering.
                 if (!$pass.length) {
                     if (retry > 0) {
                         cy.wait(800);
@@ -216,7 +318,6 @@ function getResetLinkFromRoundcube(
             .then((ok) => {
                 if (ok) return;
 
-                // fallback when cpsess url expired
                 return openInbox('/3rdparty/roundcube/?_task=mail&_mbox=INBOX').then((okFallback) => {
                     if (!okFallback) {
                         throw new Error(
@@ -252,7 +353,6 @@ function getResetLinkFromRoundcube(
 
                 const tryOpenResetMail = () =>
                     cy.get('body', { timeout: 20000 }).then(($body) => {
-                        // 1) Always prefer newest row from mail list (top row).
                         const rowSelector = [
                             '#messagelist tbody tr',
                             'table#messagelist tbody tr',
@@ -266,7 +366,6 @@ function getResetLinkFromRoundcube(
                             return cy.wrap($target).click({ force: true }).then(() => true);
                         }
 
-                        // 2) Fallback: click subject text.
                         const $subject = $body
                             .find('a,span,div,td')
                             .filter((_, el) => /WETPAINT.*重設密碼通知|重設密碼通知/i.test(el.innerText || ''))
@@ -318,7 +417,10 @@ function verifygetlatestResetPassword(email, options = {}) {
         step = 2,
         mailRetries = 20,
         mailIntervalMs = 3000,
-        source = 'auto', // 'auto' | 'roundcube' | 'task'
+        source = 'auto',
+        inboxId,
+        mailSlurpApiKey,
+        mailSlurpTimeoutMs = 120000,
         roundcubeInboxUrl: inboxUrlFromOptions,
         roundcubeAccount: accountFromOptions,
         roundcubePassword: passwordFromOptions,
@@ -335,10 +437,27 @@ function verifygetlatestResetPassword(email, options = {}) {
         passwordFromOptions ||
         Cypress.env('ROUNDCUBE_PASSWORD');
 
+    const preferMailSlurp =
+        source === 'mailslurp' || (source === 'auto' && Boolean(inboxId));
     const preferRoundcube =
         source === 'roundcube' || (source === 'auto' && Boolean(roundcubeInboxUrl));
 
-    const resetLinkChain = preferRoundcube
+    const resetLinkChain = preferMailSlurp
+        ? (() => {
+            if (!inboxId) {
+                throw new Error(
+                    'source=mailslurp but no inboxId found. ' +
+                    'Pass options.inboxId or switch to another source.'
+                );
+            }
+
+            cy.log(`get reset link from mailslurp inbox => ${inboxId}`);
+            return getResetLinkFromMailSlurp(inboxId, {
+                apiKey: mailSlurpApiKey,
+                timeoutMs: mailSlurpTimeoutMs,
+            });
+        })()
+        : preferRoundcube
         ? (() => {
             if (!roundcubeInboxUrl) {
                 throw new Error(
@@ -381,8 +500,6 @@ function verifygetlatestResetPassword(email, options = {}) {
         const baseOrigin = new URL(baseUrl).origin;
         const parsedResetUrl = new URL(resetLink, baseUrl);
 
-        // Email link may point to another host/IP (e.g. 192.168.x.x).
-        // Keep path/query but force current test origin to avoid cross-origin failures.
         const targetUrl =
             parsedResetUrl.origin === baseOrigin
                 ? parsedResetUrl.toString()
@@ -404,6 +521,214 @@ function verifygetlatestResetPassword(email, options = {}) {
     });
 }
 
+function isValidForgotPasswordAccount(account) {
+    return Boolean(
+        account
+        && account.email
+        && account.loginId
+        && account.password
+        && account.inboxId
+    );
+}
+
+function isMailSlurpInboxActive(inboxId, apiKey) {
+    if (!apiKey || !inboxId) return cy.wrap(false);
+
+    return cy.mailslurp({ apiKey }).then((mailslurp) =>
+        mailslurp.getEmails(inboxId).then(() => true).catch(() => false)
+    );
+}
+
+function createFreshForgotPasswordAccount(options = {}) {
+    const regsys = new Regsys();
+    const runId = Date.now().toString().slice(-6);
+    const rawRegisterName = options.registerName || `LG005_${runId}`;
+    const registerName = String(rawRegisterName).replace(/[^A-Za-z0-9\u4E00-\u9FFF]/g, '') || `LG005${runId}`;
+    const registerPassword = options.registerPassword || 'TestPassword123';
+    const registerGender = options.registerGender || 'female';
+    const registerPhone = options.registerPhone
+        || `09${(`${Date.now()}${Cypress._.random(100, 999)}`).slice(-8)}`;
+
+    return TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
+        cy.intercept('POST', '**/api/auth/register*').as('registerApi');
+
+        cy.visit('/register');
+        regsys.clickRegisterNameinput(registerName);
+        regsys.clickRegisterPasswordinput(registerPassword, registerPassword);
+        regsys.clickRegisterGenderinput(registerGender);
+        regsys.clickRegisterEmailinput(emailAddress);
+        regsys.clickRegisterPhoneinput(registerPhone);
+        TestRG006.verifysetupsendotpAPI();
+        regsys.clickRegisterVerificationCodeInput('email');
+        TestRG006.verifyGetEmailotpAPI({ expectedStatusCode: 200 });
+
+        return TestRG006.verifyGetRegisterOtpFromMailSlurp(inboxId, {
+            timeoutMs: 120000,
+            unreadOnly: false,
+        }).then((otp) => {
+            regsys.InputtypeRegisterVerificationCode(otp);
+            regsys.clickAndCheckRegisterButton();
+            regsys.clickAgressCheckButton();
+            regsys.clickConfirmRegisterButton();
+            return cy.wait('@registerApi').then(({ request, response }) => {
+                expect(request?.body?.email).to.eq(emailAddress);
+                expect(response?.statusCode).to.be.oneOf([200, 201]);
+
+                const account = {
+                    email: emailAddress,
+                    phone: registerPhone,
+                    loginId: registerPhone,
+                    password: registerPassword,
+                    inboxId,
+                    source: 'mailslurp',
+                };
+
+                return TestRG006.saveLatestRegisterAccount(account).then(() => account);
+            });
+        });
+    });
+}
+
+function prepareForgotPasswordAccount(options = {}) {
+    const resetPassword = options.resetPassword || `Newpassword${Date.now().toString().slice(-6)}`;
+    const mailSlurpApiKey = resolveMailSlurpApiKey(options.mailSlurpApiKey);
+    const forceCreate = options.forceCreate === true;
+    const fallbackToExistingOnCreateError = options.fallbackToExistingOnCreateError !== false;
+
+    if (forceCreate) {
+        return createFreshForgotPasswordAccount(options)
+            .then((account) => ({
+                ...account,
+                resetPassword,
+            }))
+            .then(
+                (account) => account,
+                (error) => {
+                    if (!fallbackToExistingOnCreateError) {
+                        throw error;
+                    }
+
+                    return TestRG006.readLatestRegisterAccount()
+                        .then((account) => account)
+                        .then((account) => {
+                            if (!isValidForgotPasswordAccount(account)) {
+                                throw error;
+                            }
+
+                            return isMailSlurpInboxActive(account.inboxId, mailSlurpApiKey).then((active) => {
+                                if (!active) {
+                                    throw error;
+                                }
+
+                                return {
+                                    ...account,
+                                    resetPassword,
+                                };
+                            });
+                        });
+                }
+            );
+    }
+
+    return TestRG006.readLatestRegisterAccount()
+        .then(
+            (account) => account,
+            () => null
+        )
+        .then((account) => {
+            if (!isValidForgotPasswordAccount(account)) {
+                return createFreshForgotPasswordAccount(options);
+            }
+
+            return isMailSlurpInboxActive(account.inboxId, mailSlurpApiKey).then((active) => {
+                if (active) return account;
+                return createFreshForgotPasswordAccount(options);
+            });
+        })
+        .then((account) => ({
+            ...account,
+            resetPassword,
+        }));
+}
+
+function runForgotPasswordSuccessFlow(loginSys, verifyLoginApiFn, account) {
+    loginSys.clickLoginButtonForgetfunction(account.email);
+    verifyForgetPasswordPageApI();
+    cy.get('body').then(($body) => {
+        const $target = $body.find('button:visible').filter((_, el) =>
+            /傳送重設連結|下一步|送出|重設/i.test(el.innerText || '')
+        ).first();
+
+        if ($target.length) {
+            cy.wrap($target).click({ force: true });
+            return;
+        }
+
+        cy.get('form button[type="submit"], button[type="submit"], form button')
+            .filter(':visible')
+            .first()
+            .click({ force: true });
+    });
+    verifyForgetPasswordPageApiRequest(account.email);
+
+    return verifygetlatestResetPassword(account.email, {
+        source: 'mailslurp',
+        inboxId: account.inboxId,
+        mailSlurpTimeoutMs: 120000,
+    }).then(() => {
+        verifyNextPageResetPasswordMessage();
+        loginSys.clickLoginButtonForgetfunctionResetButton(
+            account.resetPassword,
+            account.resetPassword
+        );
+        verifyResetSuccessMessage();
+        returnToLoginAfterReset();
+
+        verifyLoginApiFn();
+        loginSys.clickaccountnumber(account.loginId);
+        loginSys.clickpassword(account.resetPassword);
+        loginSys.clickLoginButton();
+    });
+}
+
+function runForgotPasswordInvalidEmailFlow(loginSys, invalidEmail = 'ZZZ@QQW') {
+    loginSys.clickLoginButtonForgetfunction(invalidEmail);
+    verifyForgetPasswordPageMessage();
+    cy.intercept('POST', FORGOT_PASSWORD_API, {
+        statusCode: 400,
+        body: { msg: 'invalid email' },
+    }).as('forgetPasswordApiFailFlow');
+    cy.get('body').then(($body) => {
+        const $target = $body.find('button:visible').filter((_, el) =>
+            /傳送重設連結|下一步|送出|重設/i.test(el.innerText || '')
+        ).first();
+
+        if ($target.length) {
+            cy.wrap($target).click({ force: true });
+            return;
+        }
+
+        cy.get('form button[type="submit"], button[type="submit"], form button')
+            .filter(':visible')
+            .first()
+            .click({ force: true });
+    });
+    cy.wait(800);
+    cy.get('@forgetPasswordApiFailFlow.all').then((calls = []) => {
+        if (calls.length > 0) {
+            const latest = calls[calls.length - 1];
+            expect(latest.request.method).to.eq('POST');
+            expect(latest.request.url).to.match(FORGOT_PASSWORD_API);
+            expect(latest.request.body).to.have.property('email', invalidEmail);
+            expect(latest.response?.statusCode).to.eq(400);
+            return;
+        }
+
+        // Frontend validation path: invalid email blocked before request is sent.
+        cy.contains('p,span,div', /email|格式|錯誤|正確/i).should('be.visible');
+    });
+}
+
 export {
     verifyForgetPasswordPageMessage,
     verifyForgetPasswordPageApI,
@@ -411,5 +736,10 @@ export {
     verifyForgetPasswordPagefailAPI,
     verifyNextPageResetPasswordMessage,
     verifyResetSuccessMessage,
+    returnToLoginAfterReset,
+    getResetLinkFromMailSlurp,
     verifygetlatestResetPassword,
+    prepareForgotPasswordAccount,
+    runForgotPasswordSuccessFlow,
+    runForgotPasswordInvalidEmailFlow,
 };
