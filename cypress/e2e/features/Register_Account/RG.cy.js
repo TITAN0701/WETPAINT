@@ -67,23 +67,25 @@ describe('Register flow', () => {
 
         })
     })
-    // 409 bugs (後端修改中)
-    describe.skip('RG-006 使用者需要註冊信箱接收訊息，並回填資訊到輸入欄中', () => {
+    // 409 bugs (後端修改中)  >  已經可以接收驗證碼 > 前端訊息錯誤
+    describe('RG-006 使用者需要註冊信箱接收訊息，並回填資訊到輸入欄中', () => {
         it('驗證驗證碼回傳、輸入文字', () => {
-            loginSys.clickRegisterButton();
-            rgaccount.clickRegisterNameinput('Test8');
-            rgaccount.clickRegisterPasswordinput('TestPassword123', 'TestPassword123');
-            rgaccount.clickRegisterGenderinput('female');
-            rgaccount.clickRegisterEmailinput('crxwkf0l2s@pxdmail.net');
-            rgaccount.clickRegisterPhoneinput('0988213551');
+            TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
+                loginSys.clickRegisterButton();
+                rgaccount.clickRegisterNameinput('Test8');
+                rgaccount.clickRegisterPasswordinput('TestPassword123', 'TestPassword123');
+                rgaccount.clickRegisterGenderinput('female');
+                rgaccount.clickRegisterEmailinput(emailAddress);
+                rgaccount.clickRegisterPhoneinput('0988213551');
 
-            TestRG006.verifysetupsendotpAPI();
-            rgaccount.clickRegisterVerificationCodeInput('email');
-            TestRG006.verifyGetEmailotpAPI({ expectedStatusCode: 200 });
+                TestRG006.verifysetupsendotpAPI();
+                rgaccount.clickRegisterVerificationCodeInput('email');
+                TestRG006.verifyGetEmailotpAPI({ expectedStatusCode: 200 });
 
-            TestRG006.verifygetoptFormProxiedEmail('crxwkf0l2s@pxdmail.net').then((otp) => {
-            rgaccount.InputtypeRegisterVerificationCode(otp);
-            })
+                TestRG006.verifyGetRegisterOtpFromMailSlurp(inboxId).then((otp) => {
+                    rgaccount.InputtypeRegisterVerificationCode(otp);
+                });
+            });
         })
     });
 

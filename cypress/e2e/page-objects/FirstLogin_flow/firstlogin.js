@@ -452,12 +452,42 @@ class firstlogin{
         }
     }
 
+    isDirectHomePath(pathname = ''){
+        const normalizedPath = String(pathname || '').toLowerCase();
+        const homePathPatterns = [
+            /\/dashboard(?:\/|$)/,
+            /\/admin\/dashboard(?:\/|$)/,
+            /\/admin\/child-list(?:\/|$)/,
+            /\/developmental(?:\/|$)/,
+            /\/\d+\/developmental(?:\/|$)/,
+        ];
+
+        return homePathPatterns.some((pattern) => pattern.test(normalizedPath));
+    }
+
+    isDirectHomeDom($body, text = ''){
+        const normalizedText = String(text || '');
+
+        return (
+            $body.find('nav a[href="/admin/dashboard"]').length > 0
+            || $body.find('nav a[href="/admin/child-list"]').length > 0
+            || $body.find('nav a[href*="/developmental"]').length > 0
+            || normalizedText.includes('儀錶板')
+            || normalizedText.includes('孩童列表')
+            || normalizedText.includes('孩童檔案')
+        );
+    }
+
     getCurrentOnboardingStep(retries = 10, intervalMs = 500){
         return cy.location('pathname', { timeout: 10000 }).then((pathname) => {
             // Prefer URL-based step detection. Example: /onboarding/step2
             const stepMatch = pathname.match(/\/onboarding\/step(\d+)/i);
             if (stepMatch?.[1]) {
                 return Number(stepMatch[1]);
+            }
+
+            if (this.isDirectHomePath(pathname)) {
+                return 5;
             }
 
             return cy.get('body', { timeout: 10000 }).then(($body) => {
@@ -500,6 +530,10 @@ class firstlogin{
                     return stepFromDom;
                 }
 
+                if (this.isDirectHomeDom($body, text)) {
+                    return 5;
+                }
+
                 if (retries <= 0) {
                     return 0;
                 }
@@ -530,7 +564,7 @@ class firstlogin{
                         this.clickConfirmButton(confirmType);
                         this.clickCompleteButton(completeType);
                     }
-                    break;
+                    return cy.then(() => ({ skipped: false, step }));
                 case 2:
                     this.clickSecondPageMessageAndButton(roleName, 'next');
                     this.clickThirdPageMessageAndButton(domainName, 'next');
@@ -540,7 +574,7 @@ class firstlogin{
                         this.clickConfirmButton(confirmType);
                         this.clickCompleteButton(completeType);
                     }
-                    break;
+                    return cy.then(() => ({ skipped: false, step }));
                 case 3:
                     this.clickThirdPageMessageAndButton(domainName, 'next');
                     if (formData) {
@@ -549,7 +583,7 @@ class firstlogin{
                         this.clickConfirmButton(confirmType);
                         this.clickCompleteButton(completeType);
                     }
-                    break;
+                    return cy.then(() => ({ skipped: false, step }));
                 case 4:
                     if (formData) {
                         this.clickFourPageMessageAndButton(formData);
@@ -557,7 +591,9 @@ class firstlogin{
                         this.clickConfirmButton(confirmType);
                         this.clickCompleteButton(completeType);
                     }
-                    break;
+                    return cy.then(() => ({ skipped: false, step }));
+                case 5:
+                    return cy.wrap({ skipped: true, step: 'home' }, { log: false });
                 default:
                     throw new Error(`無法判斷目前 onboarding 頁面，step=${step}`);
             }

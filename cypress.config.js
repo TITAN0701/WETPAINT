@@ -18,7 +18,8 @@ module.exports = {
     "PROXIEDMAIL_API_BASE": "https://proxiedmail.com",
     "ROUNDCUBE_INBOX_URL": process.env.CYPRESS_ROUNDCUBE_INBOX_URL || "https://bear.potia.net:2096/logout?",
     "ROUNDCUBE_ACCOUNT": process.env.CYPRESS_ROUNDCUBE_ACCOUNT || "titan.lee@ruenxin.com.tw",
-    "ROUNDCUBE_PASSWORD": process.env.CYPRESS_ROUNDCUBE_PASSWORD || "Titan89114625X"
+    "ROUNDCUBE_PASSWORD": process.env.CYPRESS_ROUNDCUBE_PASSWORD || "Titan89114625X",
+    "RG006_REGISTER_EMAIL": process.env.CYPRESS_RG006_REGISTER_EMAIL || process.env.CYPRESS_ROUNDCUBE_ACCOUNT || "titan.lee@ruenxin.com.tw"
   },
 
   e2e: {
