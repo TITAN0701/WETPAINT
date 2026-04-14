@@ -247,7 +247,7 @@ jobs:
           path: reports/latest
 
   deploy:
-    if: always()
+    if: always() && github.ref_name == 'main'
     needs: build-report
     runs-on: ubuntu-24.04
     environment:
