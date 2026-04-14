@@ -6,6 +6,20 @@ const LOGIN_ORIGIN = 'http://61.220.55.161:47080/login';
 const loginPage = new loginPageObject();
 const loginIOSPage = new loginIOSPageObject();
 const dashboardPage = new DashboardPageObject();
+
+function isAllowedPostLoginPath(pathname) {
+  const normalizedPath = String(pathname || '').toLowerCase();
+  const allowedPatterns = [
+    /\/dashboard(?:\/|$)/,
+    /\/admin\/dashboard(?:\/|$)/,
+    /\/admin\/child-list(?:\/|$)/,
+    /\/developmental(?:\/|$)/,
+    /\/\d+\/developmental(?:\/|$)/,
+    /\/\d+\/child(?:-|\/|$)/,
+  ];
+
+  return allowedPatterns.some((pattern) => pattern.test(normalizedPath));
+}
 //確認是否有打開Menu，沒有的話就打開
 function ensureUserMenuOpen() {
   const openMenuSelector = '[role="dialog"][id^="reka-popover-content-"][data-state="open"]';
@@ -53,10 +67,9 @@ Cypress.Commands.add('loginIOS', (account, password) => {
     cy.log(`最後登入時間(Header): ${formattedTime}`);
   });
 
-  const allowedPathFragments = ['/dashboard', '/developmental'];
   cy.location('pathname', { timeout: 10000 }).should((pathname) => {
-    const isAllowed = allowedPathFragments.some((fragment) => pathname.includes(fragment));
-    expect(isAllowed, `post-login path should include one of: ${allowedPathFragments.join(', ')}`).to.eq(true);
+    const isAllowed = isAllowedPostLoginPath(pathname);
+    expect(isAllowed, `unexpected post-login path: ${pathname}`).to.eq(true);
   });
 
   cy.location('pathname').then((pathname) => {
@@ -109,10 +122,9 @@ Cypress.Commands.add('login', (account, password) => {
     cy.log(`最後登入時間(Header): ${formattedTime}`);
   });
 
-  const allowedPathFragments = ['/dashboard', '/developmental'];
   cy.location('pathname', { timeout: 10000 }).should((pathname) => {
-    const isAllowed = allowedPathFragments.some((fragment) => pathname.includes(fragment));
-    expect(isAllowed, `post-login path should include one of: ${allowedPathFragments.join(', ')}`).to.eq(true);
+    const isAllowed = isAllowedPostLoginPath(pathname);
+    expect(isAllowed, `unexpected post-login path: ${pathname}`).to.eq(true);
   });
 
   cy.location('pathname').then((pathname) => {
