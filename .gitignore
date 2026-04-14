@@ -1,7 +1,6 @@
 node_modules/
 .npm-cache/
 cypress.env.json
-cypress/fixtures/latest_register_account.json
 
 cypress/screenshots/
 cypress/videos/
