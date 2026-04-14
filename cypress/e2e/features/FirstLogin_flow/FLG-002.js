@@ -1,4 +1,5 @@
 import FirstPageList from '../../page-objects/frontdesk_manage/firstpagelist';
+import * as TestFDT002 from '../FrontDesk_flow/FDT-002';
 import { buildValidTaiwanId } from '../FrontDesk_flow/FDT_helpers';
 
 const firstPageList = new FirstPageList();
@@ -139,13 +140,9 @@ function openCreatedChildProfileOnUI(childName) {
 
 function verifyChildSelfCodeOnProfile(childselfcode) {
     const expectedCode = verifyCodeText(childselfcode);
-    const labelPattern = /孩童身分證字號|身分證字號/;
 
-    cy.contains(
-        'label:visible,div:visible,span:visible,p:visible',
-        labelPattern,
-        { timeout: 10000 }
-    ).should('be.visible');
+    firstPageList.clickProfileButton();
+    TestFDT002.verifyProfileTabLoaded();
 
     cy.get('body').then(($body) => {
         const $idInput = $body.find('input[placeholder="F123456789"]:visible').first();
