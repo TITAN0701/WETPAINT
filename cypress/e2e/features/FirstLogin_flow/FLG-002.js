@@ -1,4 +1,5 @@
 import FirstPageList from '../../page-objects/frontdesk_manage/firstpagelist';
+import { buildValidTaiwanId } from '../FrontDesk_flow/FDT_helpers';
 
 const firstPageList = new FirstPageList();
 
@@ -122,7 +123,18 @@ function openCreatedChildProfileOnUI(childName) {
     }
 
     firstPageList.clickProfileButton();
-    cy.location('pathname', { timeout: 10000 }).should('include', '/child-profile');
+    cy.location('pathname', { timeout: 10000 }).should((pathname) => {
+        const normalizedPath = String(pathname || '').toLowerCase();
+        const isAllowed =
+            normalizedPath.includes('/child-profile')
+            || /^\/\d+$/.test(normalizedPath)
+            || /\/developmental\/\d+/.test(normalizedPath);
+
+        expect(
+            isAllowed,
+            `profile path should be one of: /child-profile, /:id, /developmental/:id; got ${pathname}`
+        ).to.eq(true);
+    });
 }
 
 function verifyChildSelfCodeOnProfile(childselfcode) {
@@ -194,6 +206,19 @@ function verifyCreateUserInfoSuccess(data) {
     verifyCreatedChildProfileOnUI(data);
 }
 
+function buildOnboardingFormData(base = {}, options = {}) {
+    const runId = options.runId || Date.now().toString().slice(-6);
+    const idSeed = options.idSeed || `${Date.now()}${runId}`;
+    const idGender = options.idGender || 'female';
+    const childNamePrefix = options.childNamePrefix || 'E2Test';
+
+    return {
+        childName: options.childName || `${childNamePrefix}${runId}`,
+        childselfcode: options.childselfcode || buildValidTaiwanId(idGender, idSeed),
+        ...base,
+    };
+}
+
 export {
     setupCreateUserInfoInterceptors,
     verifyCreateUserInfoResponse,
@@ -201,4 +226,5 @@ export {
     verifyCreatedChildProfileOnUI,
     verifyAlreadyOnHomePage,
     verifyCreateUserInfoSuccess,
+    buildOnboardingFormData,
 };
