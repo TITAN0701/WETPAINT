@@ -127,7 +127,7 @@ describe('Login flow', () => {
         });
     });
 
-    describe.only('LG-005 驗證忘記密碼功能 (invalid-email)', () => {
+    describe('LG-005 驗證忘記密碼功能 (invalid-email)', () => {
         it('點擊忘記密碼按鈕，應該要跳轉到忘記密碼頁面 (錯誤格式的email)', () => {
             TestLG005.runForgotPasswordInvalidEmailFlow(loginSys);
         });
