@@ -67,7 +67,17 @@ class childlist extends firstpagemanage {
     }
 
     clickChildInfoButton(){
-        cy.contains('button', '孩童資料').should('exist').click();
+        cy.contains('button:visible', /^孩童資料$/, { timeout: 10000 })
+            .should('be.visible')
+            .then(($button) => {
+                const $tab = Cypress.$($button);
+
+                if (!$tab.hasClass('bg-secondary-200')) {
+                    cy.wrap($button).click({ force: true });
+                }
+
+                cy.wrap($button).should('have.class', 'bg-secondary-200');
+            });
     }
 
     clickChildSuggestButton(){
