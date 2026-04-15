@@ -57,7 +57,7 @@ describe('First Login flow', () => {
         });
     });
 
-    describe('FLG-001 首次登入帳號查看頁面訊息', () => {
+    describe.only('FLG-001 首次登入帳號查看頁面訊息', () => {
         it('驗證新使用者登入後的頁面訊息', () => {
             TestRG006.loginWithLatestRegisterAccount({
                 beforeLogin: () => {
