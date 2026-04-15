@@ -20,11 +20,11 @@ describe('First Login flow', () => {
         cy.visit('/login');
     });
 
-    describe.skip('註冊流程', () => {
+    describe('註冊流程', () => {
         it('註冊新帳號', () => {
-            const registerName = 'FlgTest12';
+            const registerName = 'FlgTest14';
             const registerPassword = 'TestPassword123';
-            const registerPhone = '0923957635';
+            const registerPhone = '0912051907';
 
             TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
                 loginSys.clickRegisterButton();
@@ -111,8 +111,8 @@ describe('First Login flow', () => {
 
     describe('FLG-003 驗證孩童年齡與生日 API 一致', () => {
         it('驗證孩童列表年齡與 API 中的生日一致', () => {
-            const account = Cypress.env('FLG003_ACCOUNT') || '0999999993';
-            const password = Cypress.env('FLG003_PASSWORD') || 'password123';
+            const account = Cypress.env('FLG003_ACCOUNT');
+            const password = Cypress.env('FLG003_PASSWORD');
 
             loginSys.clickaccountnumber(account);
             loginSys.clickpassword(password);
