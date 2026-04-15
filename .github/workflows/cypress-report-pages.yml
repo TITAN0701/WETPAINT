@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: cypress-report-${{ github.ref }}
@@ -21,10 +23,16 @@ jobs:
   cypress-report:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,16 +54,67 @@ jobs:
           install: false
           command: npm run test:report -- --spec ${{ inputs.spec_path }}
 
-      - name: Upload report artifacts
+      - name: Prepare Pages site
+        if: always()
+        shell: pwsh
+        run: |
+          $reportRoot = Join-Path $PWD 'reports/latest'
+          $reportFile = Join-Path $reportRoot 'report.html'
+          $indexFile = Join-Path $reportRoot 'index.html'
+
+          if (-not (Test-Path $reportFile)) {
+            New-Item -ItemType Directory -Force -Path $reportRoot | Out-Null
+            @"
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Cypress report unavailable</title>
+          </head>
+          <body>
+            <h1>Cypress report unavailable</h1>
+            <p>The workflow did not generate <code>reports/latest/report.html</code>.</p>
+            <p>Check the workflow logs for the Cypress run details.</p>
+          </body>
+          </html>
+          "@ | Set-Content -Path $indexFile -Encoding utf8
+            exit 0
+          }
+
+          @"
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=./report.html">
+            <title>Redirecting to Cypress report</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="./report.html">report.html</a>...</p>
+          </body>
+          </html>
+          "@ | Set-Content -Path $indexFile -Encoding utf8
+
+      - name: Upload Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: reports/latest
+
+      - name: Upload debug artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-report-${{ github.run_number }}
+          name: cypress-debug-${{ github.run_number }}
           if-no-files-found: ignore
           path: |
-            reports/latest
             cypress/screenshots
             cypress/videos
+
+      - name: Deploy report to GitHub Pages
+        if: always()
+        id: deploy
+        uses: actions/deploy-pages@v4
 
       - name: Write run summary
         if: always()
@@ -68,9 +127,11 @@ jobs:
             "- Commit: `${{ github.sha }}`"
             "- Spec: `${{ inputs.spec_path }}`"
             "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            "- Artifact: `cypress-report-${{ github.run_number }}`"
+            "- Report URL: ${{ steps.deploy.outputs.page_url }}"
+            "- Debug artifact: `cypress-debug-${{ github.run_number }}`"
             ""
-            "Download the artifact from this workflow run to inspect the HTML report, screenshots, and videos."
+            "Open the report URL to inspect the latest published Mochawesome report."
+            "If the run captured screenshots or videos, download the debug artifact from this workflow run."
           ) -join "`n"
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
