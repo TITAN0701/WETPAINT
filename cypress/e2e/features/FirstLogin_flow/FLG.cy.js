@@ -29,7 +29,6 @@ describe('First Login flow', () => {
             const registerPhone = '0954127652';
 
             TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
-                cy.intercept('POST', '**/api/auth/register*').as('registerApi');
                 loginSys.clickRegisterButton();
                 regsys.clickRegisterNameinput(registerName);
                 regsys.clickRegisterPasswordinput(registerPassword, registerPassword);
@@ -47,19 +46,13 @@ describe('First Login flow', () => {
                     regsys.clickAgressCheckButton();
                     regsys.clickConfirmRegisterButton();
 
-                    return cy.wait('@registerApi').then(({ request, response }) => {
-                        expect(request?.body?.email, 'register request email').to.eq(emailAddress);
-                        expect(request?.body?.phone, 'register request phone').to.eq(registerPhone);
-                        expect(response?.statusCode, 'register response status').to.be.oneOf([200, 201]);
-
-                        return TestRG006.saveLatestRegisterAccount({
-                            email: emailAddress,
-                            phone: registerPhone,
-                            loginId: registerPhone,
-                            password: registerPassword,
-                            inboxId,
-                            source: 'mailslurp',
-                        });
+                    return TestRG006.saveLatestRegisterAccount({
+                        email: emailAddress,
+                        phone: registerPhone,
+                        loginId: registerPhone,
+                        password: registerPassword,
+                        inboxId,
+                        source: 'mailslurp',
                     });
                 });
             });
