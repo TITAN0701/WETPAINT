@@ -86,11 +86,38 @@ function resolveMailSlurpApiKey(explicitApiKey, purpose = 'test') {
   );
 }
 
+function resolveMailSlurpApiKeySource(explicitApiKey, purpose = 'test') {
+  if (explicitApiKey) {
+    return 'explicit apiKey argument';
+  }
+
+  const registerOrder = [
+    'MAILSLURP_REGISTER_API_KEY',
+    'MAILSLURP_API_KEY',
+    'MAILSLURP_TEST_API_KEY',
+  ];
+  const defaultOrder = [
+    'MAILSLURP_TEST_API_KEY',
+    'MAILSLURP_API_KEY',
+    'MAILSLURP_REGISTER_API_KEY',
+  ];
+  const envOrder = purpose === 'register' ? registerOrder : defaultOrder;
+
+  const matchedEnvName = envOrder.find((envName) => {
+    const value = Cypress.env(envName);
+    return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
+  });
+
+  return matchedEnvName || 'not found';
+}
+
 function createRegisterInboxWithMailSlurp(options = {}) {
   const { apiKey, createInboxOptions = {} } = options;
   const resolvedApiKey = resolveMailSlurpApiKey(apiKey, 'register');
+  const apiKeySource = resolveMailSlurpApiKeySource(apiKey, 'register');
 
   expect(resolvedApiKey, 'mailslurp register api key').to.be.a('string').and.not.be.empty;
+  cy.log(`MailSlurp register key source: ${apiKeySource}`);
 
   return cy.mailslurp({ apiKey: resolvedApiKey }).then((mailslurp) => mailslurp.createInboxWithOptions(createInboxOptions))
     .then((inbox) => {
@@ -112,9 +139,11 @@ function verifyGetRegisterOtpFromMailSlurp(inboxId, options = {}) {
     pattern = '(\\d{6})',
   } = options;
   const resolvedApiKey = resolveMailSlurpApiKey(apiKey, 'register');
+  const apiKeySource = resolveMailSlurpApiKeySource(apiKey, 'register');
 
   expect(inboxId, 'mailslurp inbox id').to.be.a('string').and.not.be.empty;
   expect(resolvedApiKey, 'mailslurp register api key').to.be.a('string').and.not.be.empty;
+  cy.log(`MailSlurp register key source: ${apiKeySource}`);
 
   return cy.mailslurp({ apiKey: resolvedApiKey }).then({ timeout: timeoutMs }, (mailslurp) =>
       mailslurp.waitForLatestEmail(inboxId, timeoutMs, unreadOnly).then((email) =>
