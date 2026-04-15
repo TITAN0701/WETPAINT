@@ -24,9 +24,9 @@ describe('First Login flow', () => {
 
     describe('註冊流程', () => {
         it('註冊新帳號', () => {
-            const registerName = 'FlgTest15';
+            const registerName = 'FlgTest13';
             const registerPassword = 'TestPassword123';
-            const registerPhone = '0954127652';
+            const registerPhone = '0970624178';
 
             TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
                 loginSys.clickRegisterButton();
