@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Clean previous report output
+        shell: pwsh
+        run: |
+          if (Test-Path reports/latest) {
+            Remove-Item -Recurse -Force reports/latest
+          }
+
       - name: Run Cypress
         id: cypress
         uses: cypress-io/github-action@v6
@@ -120,6 +127,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
+          $reportUrl = "${{ steps.deploy.outputs.page_url }}report.html?run=${{ github.run_number }}"
           $summary = @(
             "## Cypress Report"
             ""
@@ -127,7 +135,7 @@ jobs:
             "- Commit: ${{ github.sha }}"
             "- Spec: ${{ inputs.spec_path }}"
             "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            "- Report URL: ${{ steps.deploy.outputs.page_url }}"
+            "- Report URL: $reportUrl"
             "- Debug artifact: cypress-debug-${{ github.run_number }}"
             ""
             "Open the report URL to inspect the latest published Mochawesome report."
