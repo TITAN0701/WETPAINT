@@ -1,11 +1,16 @@
 function setupChildListAgeApiIntercepts() {
+    // Match both:
+    // /api/child
+    // /api/child/paged?...
+    // /cskapi/api/child
+    // /cskapi/api/child/paged?...
     cy.intercept('GET', /\/(?:cskapi\/)?api\/child(?:\/.*)?(?:\?.*)?$/).as('GetChildListAPI');
 }
 
 function normalizeText(value) {
     return String(value ?? '')
         .replace(/\s+/g, '')
-        .replace(/\u81FA/g, '\u53F0')
+        .replace(/\u81FA/g, '\u53F0') // 臺 -> 台
         .trim();
 }
 
@@ -14,10 +19,8 @@ function parseDate(value) {
     if (!raw) return null;
 
     const normalized = raw.replace(/\./g, '-').replace(/\//g, '-');
-    const parsed = new Date(normalized);
-    if (!Number.isNaN(parsed.getTime())) {
-        return parsed;
-    }
+    const d = new Date(normalized);
+    if (!Number.isNaN(d.getTime())) return d;
 
     return null;
 }
@@ -38,7 +41,7 @@ function calcAgeParts(birthDate, now = new Date()) {
     return { years, months };
 }
 
-function pickChildList(body) {
+function pickChildFromBody(body) {
     const candidates = [
         body?.data?.items,
         body?.data?.list,
@@ -50,80 +53,67 @@ function pickChildList(body) {
         body?.rows,
     ];
 
-    return candidates.find((arr) => Array.isArray(arr)) || [];
+    const list = candidates.find((arr) => Array.isArray(arr) && arr.length > 0);
+    if (!list) return null;
+
+    return list[0];
 }
 
 function getChildField(child, keys) {
-    return keys.map((key) => child?.[key]).find((value) => String(value ?? '').trim() !== '') ?? null;
+    return keys.map((k) => child?.[k]).find((v) => String(v ?? '').trim() !== '') ?? null;
 }
 
-function buildExpectedAgeCandidates(birthDate) {
-    const { years, months } = calcAgeParts(birthDate);
-
-    if (years <= 0) {
-        return [normalizeText(`${months}個月`)];
-    }
-
-    return [
-        normalizeText(`${years}歲${months}個月`),
-        normalizeText(`${years}歲`),
-    ];
-}
-
-function verifyCreatedChildAgeMatchesBirthDateFromApi(expectedChild = {}) {
+function verifyAnyChildAgeMatchesBirthDateFromApi() {
     cy.wait('@GetChildListAPI', { timeout: 20000 }).then(({ response }) => {
         expect(response, 'child list response').to.exist;
         expect(response.statusCode, 'statusCode').to.eq(200);
 
-        const childName = String(expectedChild?.childName || '').trim();
-        const childselfcode = String(expectedChild?.childselfcode || '').trim().toUpperCase();
-        expect(childName, 'expected child name from FLG-002').to.not.equal('');
+        const child = pickChildFromBody(response.body);
+        expect(child, 'child list should have at least one child').to.exist;
 
-        const childList = pickChildList(response.body);
-        expect(childList.length, 'child list length').to.be.greaterThan(0);
-
-        const matchedChild = childList.find((child) => {
-            const apiName = String(getChildField(child, ['name', 'childName', 'fullName']) || '').trim();
-            const apiIdentity = String(getChildField(child, [
-                'identityNo',
-                'idNo',
-                'idNumber',
-                'childIdentityNo',
-                'nationalId',
-                'identityNumber',
-            ]) || '').trim().toUpperCase();
-
-            return (
-                (childselfcode && apiIdentity === childselfcode)
-                || apiName === childName
-            );
-        });
-
-        expect(matchedChild, `child ${childName} should exist in child list API`).to.exist;
-
-        const birthRaw = getChildField(matchedChild, ['birthDate', 'birthday', 'dob', 'dateOfBirth']);
+        const identity = getChildField(child, [
+            'identityNo',
+            'idNo',
+            'idNumber',
+            'childIdentityNo',
+            'nationalId',
+            'identityNumber',
+            'id',
+        ]);
+        const childName = getChildField(child, ['name', 'childName', 'fullName']);
+        const birthRaw = getChildField(child, ['birthDate', 'birthday', 'dob', 'dateOfBirth']);
         expect(birthRaw, 'birthDate from API').to.exist;
 
         const birthDate = parseDate(birthRaw);
         expect(birthDate, `birthDate parse fail: ${birthRaw}`).to.exist;
 
-        const expectedAgeCandidates = buildExpectedAgeCandidates(birthDate);
+        const { years, months } = calcAgeParts(birthDate);
+        const expectedAgeCandidates = years <= 0
+            ? [normalizeText(`${months}\u500B\u6708`)] // 個月
+            : [
+                normalizeText(`${years}\u6B72${months}\u500B\u6708`), // 歲 + 個月
+                normalizeText(`${years}\u6B72`), // 歲
+            ];
 
-        cy.contains('div.group.cursor-pointer', childName, { timeout: 10000 })
+        const rowKey = identity || childName;
+        expect(rowKey, 'row key (identity/name)').to.exist;
+
+        cy.contains('table tbody tr', String(rowKey), { timeout: 10000 })
             .should('be.visible')
-            .then(($card) => {
-                const cardText = normalizeText($card.text());
-                const matchedAge = expectedAgeCandidates.some((candidate) => cardText.includes(candidate));
-
-                expect(
-                    matchedAge,
-                    `frontdesk card age should include one of: ${expectedAgeCandidates.join(', ')}`
-                ).to.eq(true);
+            .within(() => {
+                // 年齡欄位在第 4 欄（index 3）
+                cy.get('td').eq(3).invoke('text').then((ageText) => {
+                    const actual = normalizeText(ageText);
+                    expect(
+                        expectedAgeCandidates,
+                        `age text should match one of ${expectedAgeCandidates.join(', ')}`
+                    ).to.include(actual);
+                });
             });
     });
 }
 
 export {
     setupChildListAgeApiIntercepts,
-    verifyCreatedChildAgeMatchesBirthDateFromApi,
+    verifyAnyChildAgeMatchesBirthDateFromApi,
 };

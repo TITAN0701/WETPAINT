@@ -44,10 +44,6 @@ jobs:
         id: cypress
         continue-on-error: true
         uses: cypress-io/github-action@v6
-        env:
-          CYPRESS_MAILSLURP_REGISTER_API_KEY: ${{ secrets.MAILSLURP_REGISTER_API_KEY }}
-          CYPRESS_MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
-          CYPRESS_MAILSLURP_TEST_API_KEY: ${{ secrets.MAILSLURP_TEST_API_KEY }}
         with:
           install: false
           command: npm run test:report -- --spec ${{ inputs.spec_path }}
