@@ -1,5 +1,5 @@
 // 引入自訂命令
-import 'cypress-mochawesome-reporter/register';
+import 'allure-cypress';
 import './commands.js';
 import './user_account.js';
 import './common.js';
