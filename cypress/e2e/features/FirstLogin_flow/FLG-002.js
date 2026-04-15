@@ -3,6 +3,7 @@ import * as TestFDT002 from '../FrontDesk_flow/FDT-002';
 import { buildValidTaiwanId } from '../FrontDesk_flow/FDT_helpers';
 
 const firstPageList = new FirstPageList();
+const latestOnboardingChildPath = 'cypress/fixtures/latest_first_login_child.json';
 
 function normalizeText(value) {
     return String(value ?? '')
@@ -203,6 +204,29 @@ function verifyCreateUserInfoSuccess(data) {
     verifyCreatedChildProfileOnUI(data);
 }
 
+function saveLatestOnboardingChild(child, options = {}) {
+    const targetPath = options.path || latestOnboardingChildPath;
+    const payload = {
+        childName: child?.childName || '',
+        childselfcode: child?.childselfcode || '',
+        createdAt: child?.createdAt || new Date().toISOString(),
+    };
+
+    expect(payload.childName, 'latest onboarding child name').to.be.a('string').and.not.be.empty;
+
+    return cy.writeFile(targetPath, payload).then(() => payload);
+}
+
+function readLatestOnboardingChild(options = {}) {
+    const targetPath = options.path || latestOnboardingChildPath;
+    return cy.readFile(targetPath);
+}
+
+function clearLatestOnboardingChild(options = {}) {
+    const targetPath = options.path || latestOnboardingChildPath;
+    return cy.writeFile(targetPath, {});
+}
+
 function buildOnboardingFormData(base = {}, options = {}) {
     const runId = options.runId || Date.now().toString().slice(-6);
     const idSeed = options.idSeed || `${Date.now()}${runId}`;
@@ -217,6 +241,7 @@ function buildOnboardingFormData(base = {}, options = {}) {
 }
 
 export {
+    clearLatestOnboardingChild,
     setupCreateUserInfoInterceptors,
     verifyCreateUserInfoResponse,
     verifySavedUserInfoByOnboardingAPI,
@@ -224,4 +249,6 @@ export {
     verifyAlreadyOnHomePage,
     verifyCreateUserInfoSuccess,
     buildOnboardingFormData,
+    readLatestOnboardingChild,
+    saveLatestOnboardingChild,
 };
