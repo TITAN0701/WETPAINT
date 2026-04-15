@@ -20,7 +20,7 @@ describe('First Login flow', () => {
         cy.visit('/login');
     });
 
-    describe.skip('註冊流程', () => {
+    describe('註冊流程', () => {
         it('註冊新帳號', () => {
             const registerName = 'FlgTest12';
             const registerPassword = 'TestPassword123';
@@ -57,7 +57,7 @@ describe('First Login flow', () => {
         });
     });
 
-    describe('FLG-001 首次登入帳號查看頁面訊息', () => {
+    describe.only('FLG-001 首次登入帳號查看頁面訊息', () => {
         it('驗證新使用者登入後的頁面訊息', () => {
             TestRG006.loginWithLatestRegisterAccount({
                 beforeLogin: () => {
@@ -66,7 +66,7 @@ describe('First Login flow', () => {
             });
 
             TestFLG001.verifyGetReposnsePageAPI();
-            TestFLG001.verifyFirstLoginMessage();
+            TestFLG001.verifyFirstLoginLandingState(flgsys);
         });
     });
 
