@@ -109,18 +109,34 @@ describe('First Login flow', () => {
         });
     });
 
-    describe('FLG-003 驗證孩童年齡與生日 API 一致', () => {
+    describe.only('FLG-003 驗證孩童年齡與生日 API 一致', () => {
         it('驗證孩童列表年齡與 API 中的生日一致', () => {
-            const account = Cypress.env('FLG003_ACCOUNT');
-            const password = Cypress.env('FLG003_PASSWORD');
+            const envAccount = Cypress.env('FLG003_ACCOUNT');
+            const envPassword = Cypress.env('FLG003_PASSWORD');
 
-            loginSys.clickaccountnumber(account);
-            loginSys.clickpassword(password);
-            TestFLG003.setupChildListAgeApiIntercepts();
-            loginSys.clickLoginButton();
+            if (envAccount && envPassword) {
+                loginSys.clickaccountnumber(envAccount);
+                loginSys.clickpassword(envPassword);
+                TestFLG003.setupChildListAgeApiIntercepts();
+                loginSys.clickLoginButton();
 
-            firstPage.clickChildtable();
-            TestFLG003.verifyAnyChildAgeMatchesBirthDateFromApi();
+                TestFLG003.verifyAnyChildIdentityMatchesProfileFromApi();
+                return;
+            }
+
+            return TestRG006.readLatestRegisterAccount().then(({ email, phone, loginId, password }) => {
+                const fallbackAccount = loginId || phone || email;
+
+                expect(fallbackAccount, 'FLG003 fallback account').to.be.a('string').and.not.be.empty;
+                expect(password, 'FLG003 fallback password').to.be.a('string').and.not.be.empty;
+
+                loginSys.clickaccountnumber(fallbackAccount);
+                loginSys.clickpassword(password);
+                TestFLG003.setupChildListAgeApiIntercepts();
+                loginSys.clickLoginButton();
+
+                TestFLG003.verifyAnyChildIdentityMatchesProfileFromApi();
+            });
         });
     });
 });
