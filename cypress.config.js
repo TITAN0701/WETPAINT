@@ -1,18 +1,7 @@
+const { allureCypress } = require('allure-cypress/reporter');
+
 module.exports = {
   projectId: 'z51i7a',
-  reporter: 'cypress-mochawesome-reporter',
-  reporterOptions: {
-    reportDir: 'reports/latest',
-    reportFilename: 'report',
-    overwrite: true,
-    charts: true,
-    reportPageTitle: 'WETPAINT Cypress Test Report',
-    reportTitle: 'WETPAINT Cypress Test Report',
-    embeddedScreenshots: true,
-    inlineAssets: true,
-    ignoreVideos: true,
-    saveAllAttempts: false,
-  },
   env: {
     "PROXIEDMAIL_API_KEY": "d6f74c5e43bc096e573922e4e147d56b",
     "PROXIEDMAIL_API_BASE": "https://proxiedmail.com",
@@ -25,7 +14,9 @@ module.exports = {
   e2e: {
     baseUrl: 'http://61.220.55.161:47080',
     setupNodeEvents(on, config) {
-      require('cypress-mochawesome-reporter/plugin')(on);
+      allureCypress(on, config, {
+        resultsDir: 'allure-results',
+      });
 
       on('task', {
         async getLatestResetPassword({ email }) {

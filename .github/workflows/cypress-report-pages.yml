@@ -40,15 +40,17 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install dependencies
         run: npm ci
 
       - name: Clean previous report output
-        shell: pwsh
-        run: |
-          if (Test-Path reports/latest) {
-            Remove-Item -Recurse -Force reports/latest
-          }
+        run: npm run report:clean
 
       - name: Run Cypress
         id: cypress
@@ -61,52 +63,36 @@ jobs:
           install: false
           command: npm run test:report -- --spec ${{ inputs.spec_path }}
 
-      - name: Prepare Pages site
+      - name: Generate Allure HTML report
         if: always()
         shell: pwsh
         run: |
-          $reportRoot = Join-Path $PWD 'reports/latest'
-          $reportFile = Join-Path $reportRoot 'report.html'
-          $indexFile = Join-Path $reportRoot 'index.html'
-
-          if (-not (Test-Path $reportFile)) {
-            New-Item -ItemType Directory -Force -Path $reportRoot | Out-Null
-            @"
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>Cypress report unavailable</title>
-          </head>
-          <body>
-            <h1>Cypress report unavailable</h1>
-            <p>The workflow did not generate <code>reports/latest/report.html</code>.</p>
-            <p>Check the workflow logs for the Cypress run details.</p>
-          </body>
-          </html>
-          "@ | Set-Content -Path $indexFile -Encoding utf8
+          if (Test-Path allure-results) {
+            npm run report:generate
             exit 0
           }
 
+          New-Item -ItemType Directory -Force -Path allure-report | Out-Null
           @"
           <!doctype html>
           <html lang="en">
           <head>
             <meta charset="utf-8">
-            <meta http-equiv="refresh" content="0; url=./report.html">
-            <title>Redirecting to Cypress report</title>
+            <title>Allure report unavailable</title>
           </head>
           <body>
-            <p>Redirecting to <a href="./report.html">report.html</a>...</p>
+            <h1>Allure report unavailable</h1>
+            <p>The workflow did not generate <code>allure-results</code>.</p>
+            <p>Check the workflow logs for the Cypress run details.</p>
           </body>
           </html>
-          "@ | Set-Content -Path $indexFile -Encoding utf8
+          "@ | Set-Content -Path allure-report/index.html -Encoding utf8
 
       - name: Upload Pages artifact
         if: always()
         uses: actions/upload-pages-artifact@v3
         with:
-          path: reports/latest
+          path: allure-report
 
       - name: Upload debug artifacts
         if: always()
@@ -115,6 +101,7 @@ jobs:
           name: cypress-debug-${{ github.run_number }}
           if-no-files-found: ignore
           path: |
+            allure-results
             cypress/screenshots
             cypress/videos
 
@@ -127,7 +114,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $reportUrl = "${{ steps.deploy.outputs.page_url }}report.html?run=${{ github.run_number }}"
+          $reportUrl = "${{ steps.deploy.outputs.page_url }}?run=${{ github.run_number }}"
           $summary = @(
             "## Cypress Report"
             ""
@@ -138,8 +125,8 @@ jobs:
             "- Report URL: $reportUrl"
             "- Debug artifact: cypress-debug-${{ github.run_number }}"
             ""
-            "Open the report URL to inspect the latest published Mochawesome report."
-            "If the run captured screenshots or videos, download the debug artifact from this workflow run."
+            "Open the report URL to inspect the latest published Allure report."
+            "If the run captured screenshots, videos, or raw Allure results, download the debug artifact from this workflow run."
           ) -join "`n"
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

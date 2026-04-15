@@ -6,12 +6,16 @@
     "cy:run": "cypress run",
     "cy:run:chrome": "cypress run --browser chrome",
     "test:e2e": "cypress run",
-    "test:report": "cypress run"
+    "test:report": "cypress run",
+    "report:clean": "node -e \"const fs=require('fs'); ['allure-results','allure-report'].forEach((dir)=>fs.rmSync(dir,{recursive:true,force:true}));\"",
+    "report:generate": "allure generate allure-results --clean -o allure-report",
+    "report:open": "allure open allure-report"
   },
   "devDependencies": {
+    "allure-commandline": "^2.38.1",
+    "allure-cypress": "^3.7.1",
     "cypress": "^15.12.0",
     "cypress-mailslurp": "^1.11.1",
-    "cypress-mochawesome-reporter": "^4.0.2",
     "cypress-test-email": "^1.5.2"
   }
 }
