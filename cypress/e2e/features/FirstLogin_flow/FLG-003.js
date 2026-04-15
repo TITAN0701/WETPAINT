@@ -1,44 +1,18 @@
-function setupChildListAgeApiIntercepts() {
-    // Match both:
-    // /api/child
-    // /api/child/paged?...
-    // /cskapi/api/child
-    // /cskapi/api/child/paged?...
-    cy.intercept('GET', /\/(?:cskapi\/)?api\/child(?:\/.*)?(?:\?.*)?$/).as('GetChildListAPI');
-}
+import FirstPageList from '../../page-objects/frontdesk_manage/firstpagelist';
+import * as TestFDT002 from '../FrontDesk_flow/FDT-002';
+
+const firstPageList = new FirstPageList();
 
 function normalizeText(value) {
     return String(value ?? '')
         .replace(/\s+/g, '')
-        .replace(/\u81FA/g, '\u53F0') // 臺 -> 台
-        .trim();
+        .replace(/\u81FA/g, '\u53F0')
+        .trim()
+        .toUpperCase();
 }
 
-function parseDate(value) {
-    const raw = String(value ?? '').trim();
-    if (!raw) return null;
-
-    const normalized = raw.replace(/\./g, '-').replace(/\//g, '-');
-    const d = new Date(normalized);
-    if (!Number.isNaN(d.getTime())) return d;
-
-    return null;
-}
-
-function calcAgeParts(birthDate, now = new Date()) {
-    let years = now.getFullYear() - birthDate.getFullYear();
-    let months = now.getMonth() - birthDate.getMonth();
-
-    if (now.getDate() < birthDate.getDate()) {
-        months -= 1;
-    }
-
-    if (months < 0) {
-        years -= 1;
-        months += 12;
-    }
-
-    return { years, months };
+function setupChildListAgeApiIntercepts() {
+    cy.intercept('GET', /\/(?:cskapi\/)?api\/child(?:\/.*)?(?:\?.*)?$/).as('GetChildListAPI');
 }
 
 function pickChildFromBody(body) {
@@ -54,16 +28,14 @@ function pickChildFromBody(body) {
     ];
 
     const list = candidates.find((arr) => Array.isArray(arr) && arr.length > 0);
-    if (!list) return null;
-
-    return list[0];
+    return list ? list[0] : null;
 }
 
 function getChildField(child, keys) {
-    return keys.map((k) => child?.[k]).find((v) => String(v ?? '').trim() !== '') ?? null;
+    return keys.map((key) => child?.[key]).find((value) => String(value ?? '').trim() !== '') ?? null;
 }
 
-function verifyAnyChildAgeMatchesBirthDateFromApi() {
+function verifyAnyChildIdentityMatchesProfileFromApi() {
     cy.wait('@GetChildListAPI', { timeout: 20000 }).then(({ response }) => {
         expect(response, 'child list response').to.exist;
         expect(response.statusCode, 'statusCode').to.eq(200);
@@ -78,42 +50,38 @@ function verifyAnyChildAgeMatchesBirthDateFromApi() {
             'childIdentityNo',
             'nationalId',
             'identityNumber',
-            'id',
         ]);
         const childName = getChildField(child, ['name', 'childName', 'fullName']);
-        const birthRaw = getChildField(child, ['birthDate', 'birthday', 'dob', 'dateOfBirth']);
-        expect(birthRaw, 'birthDate from API').to.exist;
 
-        const birthDate = parseDate(birthRaw);
-        expect(birthDate, `birthDate parse fail: ${birthRaw}`).to.exist;
+        expect(identity, 'identity from API').to.be.a('string').and.not.be.empty;
+        expect(childName, 'child name from API').to.be.a('string').and.not.be.empty;
 
-        const { years, months } = calcAgeParts(birthDate);
-        const expectedAgeCandidates = years <= 0
-            ? [normalizeText(`${months}\u500B\u6708`)] // 個月
-            : [
-                normalizeText(`${years}\u6B72${months}\u500B\u6708`), // 歲 + 個月
-                normalizeText(`${years}\u6B72`), // 歲
-            ];
+        cy.visit('/developmental');
+        cy.location('pathname', { timeout: 10000 }).should('include', '/developmental');
 
-        const rowKey = identity || childName;
-        expect(rowKey, 'row key (identity/name)').to.exist;
+        firstPageList.clickChildfileButton(childName);
+        firstPageList.clickProfileButton();
+        TestFDT002.verifyProfileTabLoaded();
 
-        cy.contains('table tbody tr', String(rowKey), { timeout: 10000 })
-            .should('be.visible')
-            .within(() => {
-                // 年齡欄位在第 4 欄（index 3）
-                cy.get('td').eq(3).invoke('text').then((ageText) => {
-                    const actual = normalizeText(ageText);
-                    expect(
-                        expectedAgeCandidates,
-                        `age text should match one of ${expectedAgeCandidates.join(', ')}`
-                    ).to.include(actual);
+        cy.get('body').then(($body) => {
+            const $idInput = $body.find('input[placeholder="F123456789"]:visible').first();
+
+            if ($idInput.length > 0) {
+                cy.wrap($idInput).invoke('val').then((value) => {
+                    expect(normalizeText(value)).to.eq(normalizeText(identity));
                 });
-            });
+                return;
+            }
+
+            cy.contains('body', normalizeText(identity), {
+                timeout: 10000,
+                matchCase: true,
+            }).should('be.visible');
+        });
     });
 }
 
 export {
     setupChildListAgeApiIntercepts,
-    verifyAnyChildAgeMatchesBirthDateFromApi,
+    verifyAnyChildIdentityMatchesProfileFromApi,
 };
