@@ -18,13 +18,13 @@ The generated HTML report is self-contained for normal sharing use:
 
 If you want to keep historical copies, duplicate the `reports/latest` contents into a dated folder under `reports/archive/`.
 
-## GitHub Actions Artifacts
+## GitHub Pages
 
 This repo also includes a GitHub Actions workflow at:
 
 `.github/workflows/cypress-report-pages.yml`
 
-It runs a manually selected Cypress spec and uploads the report output as a workflow artifact.
+It runs a manually selected Cypress spec, generates the Mochawesome HTML report, and publishes `reports/latest` to GitHub Pages.
 
 To use it:
 
@@ -44,7 +44,7 @@ cypress/e2e/features/FirstPage_Manage/FPM.cy.js
 After the run completes:
 
 1. Open that workflow run
-2. Download the `cypress-report-<run_number>` artifact
-3. Open `reports/latest/report.html` locally
+2. Click the GitHub Pages deployment URL from the job summary or deployment section
+3. The site root redirects to `report.html`
 
-The artifact also includes any captured screenshots and videos from the run.
+If the run captured screenshots or videos, download the `cypress-debug-<run_number>` artifact from the same workflow run.
