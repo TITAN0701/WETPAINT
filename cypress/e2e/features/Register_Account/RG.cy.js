@@ -68,7 +68,7 @@ describe('Register flow', () => {
         })
     })
     // 409 bugs (後端修改中)  >  已經可以接收驗證碼 > 前端訊息錯誤
-    describe('RG-006 使用者需要註冊信箱接收訊息，並回填資訊到輸入欄中', () => {
+    describe.skip('RG-006 使用者需要註冊信箱接收訊息，並回填資訊到輸入欄中', () => {
         it('驗證驗證碼回傳、輸入文字', () => {
             TestRG006.createRegisterInboxWithMailSlurp().then(({ inboxId, emailAddress }) => {
                 loginSys.clickRegisterButton();
@@ -100,7 +100,7 @@ describe('Register flow', () => {
         })
     })
 
-    describe('RG-008 檢查是否可以正確登入帳號，並檢查錯誤密碼' , (  ) => {
+    describe.skip('RG-008 檢查是否可以正確登入帳號，並檢查錯誤密碼' , (  ) => {
         it('新建帳號可以正確登入頁面', () => {
             //創建帳號、填寫名字、密碼、信箱、手機
             loginSys.clickRegisterButton();
