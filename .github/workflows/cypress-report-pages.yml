@@ -11,28 +11,16 @@ on:
         type: string
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: cypress-report-${{ github.ref }}
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   cypress-report:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,84 +37,104 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Clean previous report output
-        run: npm run report:clean
-
-      - name: Run Cypress
+      - name: Run Cypress and build Allure report
         id: cypress
-        uses: cypress-io/github-action@v6
+        continue-on-error: true
+        shell: bash
         env:
           CYPRESS_MAILSLURP_REGISTER_API_KEY: ${{ secrets.MAILSLURP_REGISTER_API_KEY }}
           CYPRESS_MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
           CYPRESS_MAILSLURP_TEST_API_KEY: ${{ secrets.MAILSLURP_TEST_API_KEY }}
-        with:
-          install: false
-          command: npm run test:report -- --spec ${{ inputs.spec_path }}
+          CYPRESS_PROXIEDMAIL_API_KEY: ${{ secrets.PROXIEDMAIL_API_KEY }}
+          CYPRESS_PROXIEDMAIL_API_BASE: ${{ secrets.PROXIEDMAIL_API_BASE }}
+          CYPRESS_ROUNDCUBE_INBOX_URL: ${{ secrets.ROUNDCUBE_INBOX_URL }}
+          CYPRESS_ROUNDCUBE_ACCOUNT: ${{ secrets.ROUNDCUBE_ACCOUNT }}
+          CYPRESS_ROUNDCUBE_PASSWORD: ${{ secrets.ROUNDCUBE_PASSWORD }}
+          CYPRESS_RG006_REGISTER_EMAIL: ${{ secrets.RG006_REGISTER_EMAIL }}
+          REPORT_RUN_ID: gh-${{ github.run_id }}-${{ github.run_attempt }}
+          REPORT_ATTACH_SCREENSHOTS: failed
+        run: npm run report -- --spec "${{ inputs.spec_path }}"
 
-      - name: Generate Allure HTML report
+      - name: Prepare gh-pages working tree
         if: always()
-        shell: pwsh
+        shell: bash
         run: |
-          if (Test-Path allure-results) {
-            npm run report:generate
+          repo_url="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads "$repo_url" gh-pages >/dev/null 2>&1; then
+            git clone --depth 1 --branch gh-pages "$repo_url" .gh-pages
+          else
+            mkdir -p .gh-pages
+            cd .gh-pages
+            git init -b gh-pages
+            git remote add origin "$repo_url"
+            cd ..
+          fi
+
+      - name: Update report history
+        if: always()
+        shell: bash
+        env:
+          REPORT_SOURCE_DIR: reports/.generated/allure-report
+          PAGES_DIR: .gh-pages
+          PUBLISH_BRANCH_NAME: ${{ github.ref_name }}
+          REPORT_SPEC_PATH: ${{ inputs.spec_path }}
+          WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          if [ -d "reports/.generated/allure-report" ]; then
+            node scripts/publish-report-history.js
+          else
+            echo "reports/.generated/allure-report not found, skip publish update"
+          fi
+
+      - name: Push gh-pages
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -d ".gh-pages/.git" ]; then
+            echo "gh-pages working tree missing, skip push"
             exit 0
-          }
+          fi
 
-          New-Item -ItemType Directory -Force -Path allure-report | Out-Null
-          @"
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>Allure report unavailable</title>
-          </head>
-          <body>
-            <h1>Allure report unavailable</h1>
-            <p>The workflow did not generate <code>allure-results</code>.</p>
-            <p>Check the workflow logs for the Cypress run details.</p>
-          </body>
-          </html>
-          "@ | Set-Content -Path allure-report/index.html -Encoding utf8
+          cd .gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No report changes to publish"
+            exit 0
+          fi
 
-      - name: Upload Pages artifact
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: allure-report
-
-      - name: Upload debug artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-debug-${{ github.run_number }}
-          if-no-files-found: ignore
-          path: |
-            allure-results
-            cypress/screenshots
-            cypress/videos
-
-      - name: Deploy report to GitHub Pages
-        if: always()
-        id: deploy
-        uses: actions/deploy-pages@v4
+          git commit -m "docs: publish cypress report #${{ github.run_number }}"
+          git push origin HEAD:gh-pages
 
       - name: Write run summary
         if: always()
-        shell: pwsh
+        shell: bash
         run: |
-          $reportUrl = "${{ steps.deploy.outputs.page_url }}?run=${{ github.run_number }}"
-          $summary = @(
-            "## Cypress Report"
-            ""
-            "- Branch: ${{ github.ref_name }}"
-            "- Commit: ${{ github.sha }}"
-            "- Spec: ${{ inputs.spec_path }}"
-            "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            "- Report URL: $reportUrl"
-            "- Debug artifact: cypress-debug-${{ github.run_number }}"
-            ""
-            "Open the report URL to inspect the latest published Allure report."
-            "If the run captured screenshots, videos, or raw Allure results, download the debug artifact from this workflow run."
-          ) -join "`n"
+          pages_base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          branch_slug="$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g')"
+          spec_slug="$(echo "${{ inputs.spec_path }}" | sed -E 's#^cypress/##; s#[/\\]+#-#g; s/\.(cy|spec)\.[^.]+$##; s/\.[^.]+$##' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c1-80)"
+          if [ "${{ github.run_attempt }}" -gt 1 ]; then
+            run_label="${{ github.run_number }}-attempt-${{ github.run_attempt }}-${spec_slug}"
+          else
+            run_label="${{ github.run_number }}-${spec_slug}"
+          fi
+          {
+            echo "## Cypress Report"
+            echo
+            echo "- Branch: \`${{ github.ref_name }}\`"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Spec: \`${{ inputs.spec_path }}\`"
+            echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- Latest report: ${pages_base}/latest/"
+            echo "- History index: ${pages_base}/"
+            echo "- Run report: ${pages_base}/runs/${branch_slug}/${run_label}/"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+      - name: Fail workflow if Cypress failed
+        if: steps.cypress.outcome == 'failure'
+        shell: bash
+        run: exit 1

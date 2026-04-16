@@ -23,8 +23,14 @@ function verifygetoptFormProxiedEmail(email, retries = 7) {
   });
 }
 
+function getLatestRegisterAccountPath() {
+  const reportRunId = String(Cypress.env('REPORT_RUN_ID') || 'local').trim() || 'local';
+  const safeRunId = reportRunId.replace(/[^A-Za-z0-9._-]/g, '-');
+  return `cypress/.runtime/${safeRunId}/latest_register_account.json`;
+}
+
 function saveLatestRegisterAccount(account, options = {}) {
-  const targetPath = options.path || 'cypress/fixtures/latest_register_account.json';
+  const targetPath = options.path || getLatestRegisterAccountPath();
   const payload = {
     email: account?.email || '',
     phone: account?.phone || '',
@@ -42,7 +48,7 @@ function saveLatestRegisterAccount(account, options = {}) {
 }
 
 function readLatestRegisterAccount(options = {}) {
-  const targetPath = options.path || 'cypress/fixtures/latest_register_account.json';
+  const targetPath = options.path || getLatestRegisterAccountPath();
   return cy.readFile(targetPath);
 }
 
