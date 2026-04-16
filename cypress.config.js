@@ -1,21 +1,39 @@
 const { allureCypress } = require('allure-cypress/reporter');
+const { relativeToRepo, allureResultsDir } = require('./scripts/report-paths');
+
+function resolveEnvValue(...keys) {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+}
 
 module.exports = {
   projectId: 'z51i7a',
   env: {
-    "PROXIEDMAIL_API_KEY": "d6f74c5e43bc096e573922e4e147d56b",
-    "PROXIEDMAIL_API_BASE": "https://proxiedmail.com",
-    "ROUNDCUBE_INBOX_URL": process.env.CYPRESS_ROUNDCUBE_INBOX_URL || "https://bear.potia.net:2096/logout?",
-    "ROUNDCUBE_ACCOUNT": process.env.CYPRESS_ROUNDCUBE_ACCOUNT || "titan.lee@ruenxin.com.tw",
-    "ROUNDCUBE_PASSWORD": process.env.CYPRESS_ROUNDCUBE_PASSWORD || "Titan89114625X",
-    "RG006_REGISTER_EMAIL": process.env.CYPRESS_RG006_REGISTER_EMAIL || process.env.CYPRESS_ROUNDCUBE_ACCOUNT || "titan.lee@ruenxin.com.tw"
+    PROXIEDMAIL_API_KEY: resolveEnvValue('CYPRESS_PROXIEDMAIL_API_KEY', 'PROXIEDMAIL_API_KEY'),
+    PROXIEDMAIL_API_BASE:
+      resolveEnvValue('CYPRESS_PROXIEDMAIL_API_BASE', 'PROXIEDMAIL_API_BASE') || 'https://proxiedmail.com',
+    ROUNDCUBE_INBOX_URL: resolveEnvValue('CYPRESS_ROUNDCUBE_INBOX_URL', 'ROUNDCUBE_INBOX_URL'),
+    ROUNDCUBE_ACCOUNT: resolveEnvValue('CYPRESS_ROUNDCUBE_ACCOUNT', 'ROUNDCUBE_ACCOUNT'),
+    ROUNDCUBE_PASSWORD: resolveEnvValue('CYPRESS_ROUNDCUBE_PASSWORD', 'ROUNDCUBE_PASSWORD'),
+    RG006_REGISTER_EMAIL:
+      resolveEnvValue('CYPRESS_RG006_REGISTER_EMAIL', 'RG006_REGISTER_EMAIL')
+      || resolveEnvValue('CYPRESS_ROUNDCUBE_ACCOUNT', 'ROUNDCUBE_ACCOUNT'),
+    REPORT_RUN_ID: resolveEnvValue('CYPRESS_REPORT_RUN_ID', 'REPORT_RUN_ID'),
+    REPORT_ATTACH_SCREENSHOTS:
+      resolveEnvValue('CYPRESS_REPORT_ATTACH_SCREENSHOTS', 'REPORT_ATTACH_SCREENSHOTS') || 'failed',
   },
 
   e2e: {
     baseUrl: 'http://61.220.55.161:47080',
     setupNodeEvents(on, config) {
       allureCypress(on, config, {
-        resultsDir: 'allure-results',
+        resultsDir: relativeToRepo(allureResultsDir),
       });
 
       on('task', {

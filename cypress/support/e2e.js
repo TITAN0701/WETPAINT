@@ -1,4 +1,5 @@
 import 'allure-cypress';
+import { attachmentPath, ContentType } from 'allure-cypress';
 import './commands.js';
 import './user_account.js';
 import './common.js';
@@ -8,6 +9,15 @@ import 'cypress-test-email';
 afterEach(function () {
   const runnable = this.currentTest;
   if (!runnable) {
+    return;
+  }
+
+  const screenshotMode = String(Cypress.env('REPORT_ATTACH_SCREENSHOTS') || 'failed').trim().toLowerCase();
+  const shouldCapture =
+    screenshotMode === 'all'
+    || (screenshotMode !== 'none' && runnable.state === 'failed');
+
+  if (!shouldCapture) {
     return;
   }
 
@@ -21,6 +31,11 @@ afterEach(function () {
   cy.screenshot(screenshotName, {
     capture: 'viewport',
     overwrite: true,
+    onAfterScreenshot(_el, details) {
+      attachmentPath(screenshotName, details.path, {
+        contentType: ContentType.PNG,
+      });
+    },
   });
 });
 

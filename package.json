@@ -6,10 +6,9 @@
     "cy:run": "cypress run",
     "cy:run:chrome": "cypress run --browser chrome",
     "test:e2e": "cypress run",
-    "test:report": "cypress run",
-    "report:clean": "node -e \"const fs=require('fs'); ['allure-results','allure-report'].forEach((dir)=>fs.rmSync(dir,{recursive:true,force:true}));\"",
-    "report:generate": "allure generate allure-results --clean -o allure-report",
-    "report:open": "allure open allure-report"
+    "report": "node scripts/run-report.js",
+    "report:clean": "node scripts/clean-report-output.js",
+    "report:open": "node scripts/open-report.js"
   },
   "devDependencies": {
     "allure-commandline": "^2.38.1",

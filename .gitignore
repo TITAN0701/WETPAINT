@@ -5,6 +5,8 @@ cypress.env.json
 cypress/screenshots/
 cypress/videos/
 cypress/downloads/
+cypress/.runtime/
+reports/.generated/
 reports/latest/*
 reports/archive/*
 !reports/latest/.gitkeep

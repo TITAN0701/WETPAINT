@@ -171,3 +171,7 @@ cypress/
 例如:
 /featuers/common/login/login.cy.js 之testcase命名為VUP_XXX，源自於describe上的敘述VIGI-USERPERMISSION => VUP
 每個編號數字都為3位，從001開始，編號順序無意義，方便追蹤用
+
+## 補充
+
+如需產出目前版本的測試報表，請參考 `reports/README.md`。

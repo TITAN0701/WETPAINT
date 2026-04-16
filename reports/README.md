@@ -54,3 +54,16 @@ After the run completes:
 3. The site root opens the generated Allure report
 
 If the run captured screenshots, videos, or raw Allure results, download the `cypress-debug-<run_number>` artifact from the same workflow run.
+
+## Update
+
+Current local command has been simplified to:
+
+```bash
+npm run report -- --spec cypress/e2e/features/FirstLogin_flow/FLG.cy.js
+```
+
+Current generated paths are:
+
+- `reports/.generated/allure-results`
+- `reports/.generated/allure-report`
