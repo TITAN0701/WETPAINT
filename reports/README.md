@@ -22,8 +22,6 @@ npm run report:open
 
 Allure requires Java 8 or higher to generate or open the HTML report.
 
-If you want to keep historical copies, duplicate the `allure-report` contents into a dated folder under `reports/archive/`.
-
 ## GitHub Pages
 
 This repo also includes a GitHub Actions workflow at:
@@ -67,3 +65,5 @@ Current generated paths are:
 
 - `reports/.generated/allure-results`
 - `reports/.generated/allure-report`
+
+Old `reports/latest` and `reports/archive` folders are no longer used by the current flow.

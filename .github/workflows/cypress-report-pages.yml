@@ -71,6 +71,7 @@ jobs:
           fi
 
       - name: Update report history
+        id: publish_history
         if: always()
         shell: bash
         env:
@@ -83,8 +84,10 @@ jobs:
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
+          echo "published=false" >> "$GITHUB_OUTPUT"
           if [ -d "reports/.generated/allure-report" ]; then
             node scripts/publish-report-history.js
+            echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "reports/.generated/allure-report not found, skip publish update"
           fi
@@ -120,39 +123,6 @@ jobs:
           SUMMARY_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           pages_base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          summary_json="$(node <<'NODE'
-          const sanitize = (value, fallback = 'item') => {
-            const normalized = String(value || '')
-              .trim()
-              .toLowerCase()
-              .replace(/[^a-z0-9._-]+/g, '-')
-              .replace(/-+/g, '-')
-              .replace(/^-|-$/g, '')
-              .slice(0, 80);
-            return normalized || fallback;
-          };
-
-          const branchSlug = sanitize(process.env.SUMMARY_BRANCH_NAME, 'unknown-branch');
-          const specSlug = sanitize(
-            String(process.env.SUMMARY_SPEC_PATH || '')
-              .replace(/^cypress[\\/]/i, '')
-              .replace(/[\\/]/g, '-')
-              .replace(/\.(cy|spec)\.[^.]+$/i, '')
-              .replace(/\.[^.]+$/, ''),
-            'spec'
-          );
-          const runNumber = String(process.env.SUMMARY_RUN_NUMBER || '0');
-          const runAttempt = Number(process.env.SUMMARY_RUN_ATTEMPT || '1');
-          const runLabel =
-            runAttempt > 1
-              ? `${runNumber}-attempt-${runAttempt}-${specSlug}`
-              : `${runNumber}-${specSlug}`;
-
-          process.stdout.write(JSON.stringify({ branchSlug, runLabel }));
-          NODE
-          )"
-          branch_slug="$(node -p "JSON.parse(process.argv[1]).branchSlug" "$summary_json")"
-          run_label="$(node -p "JSON.parse(process.argv[1]).runLabel" "$summary_json")"
           {
             echo "## Cypress Report"
             echo
@@ -160,9 +130,46 @@ jobs:
             echo "- Commit: \`${{ github.sha }}\`"
             echo "- Spec: \`${{ inputs.spec_path }}\`"
             echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo "- Latest report: ${pages_base}/latest/"
-            echo "- History index: ${pages_base}/"
-            echo "- Run report: ${pages_base}/runs/${branch_slug}/${run_label}/"
+            if [ "${{ steps.publish_history.outputs.published }}" = "true" ]; then
+              summary_json="$(node <<'NODE'
+              const sanitize = (value, fallback = 'item') => {
+                const normalized = String(value || '')
+                  .trim()
+                  .toLowerCase()
+                  .replace(/[^a-z0-9._-]+/g, '-')
+                  .replace(/-+/g, '-')
+                  .replace(/^-|-$/g, '')
+                  .slice(0, 80);
+                return normalized || fallback;
+              };
+
+              const branchSlug = sanitize(process.env.SUMMARY_BRANCH_NAME, 'unknown-branch');
+              const specSlug = sanitize(
+                String(process.env.SUMMARY_SPEC_PATH || '')
+                  .replace(/^cypress[\\/]/i, '')
+                  .replace(/[\\/]/g, '-')
+                  .replace(/\.(cy|spec)\.[^.]+$/i, '')
+                  .replace(/\.[^.]+$/, ''),
+                'spec'
+              );
+              const runNumber = String(process.env.SUMMARY_RUN_NUMBER || '0');
+              const runAttempt = Number(process.env.SUMMARY_RUN_ATTEMPT || '1');
+              const runLabel =
+                runAttempt > 1
+                  ? `${runNumber}-attempt-${runAttempt}-${specSlug}`
+                  : `${runNumber}-${specSlug}`;
+
+              process.stdout.write(JSON.stringify({ branchSlug, runLabel }));
+              NODE
+              )"
+              branch_slug="$(node -p "JSON.parse(process.argv[1]).branchSlug" "$summary_json")"
+              run_label="$(node -p "JSON.parse(process.argv[1]).runLabel" "$summary_json")"
+              echo "- Latest report: ${pages_base}/latest/"
+              echo "- History index: ${pages_base}/"
+              echo "- Run report: ${pages_base}/runs/${branch_slug}/${run_label}/"
+            else
+              echo "- Report status: not published"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail workflow if Cypress failed

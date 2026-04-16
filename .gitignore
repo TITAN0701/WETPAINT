@@ -7,10 +7,6 @@ cypress/videos/
 cypress/downloads/
 cypress/.runtime/
 reports/.generated/
-reports/latest/*
-reports/archive/*
-!reports/latest/.gitkeep
-!reports/archive/.gitkeep
 
 .tmp-cypress-run.log
 npm-debug.log*
