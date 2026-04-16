@@ -113,15 +113,46 @@ jobs:
       - name: Write run summary
         if: always()
         shell: bash
+        env:
+          SUMMARY_BRANCH_NAME: ${{ github.ref_name }}
+          SUMMARY_SPEC_PATH: ${{ inputs.spec_path }}
+          SUMMARY_RUN_NUMBER: ${{ github.run_number }}
+          SUMMARY_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           pages_base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          branch_slug="$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g')"
-          spec_slug="$(echo "${{ inputs.spec_path }}" | sed -E 's#^cypress/##; s#[/\\]+#-#g; s/\.(cy|spec)\.[^.]+$##; s/\.[^.]+$##' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c1-80)"
-          if [ "${{ github.run_attempt }}" -gt 1 ]; then
-            run_label="${{ github.run_number }}-attempt-${{ github.run_attempt }}-${spec_slug}"
-          else
-            run_label="${{ github.run_number }}-${spec_slug}"
-          fi
+          summary_json="$(node <<'NODE'
+          const sanitize = (value, fallback = 'item') => {
+            const normalized = String(value || '')
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9._-]+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '')
+              .slice(0, 80);
+            return normalized || fallback;
+          };
+
+          const branchSlug = sanitize(process.env.SUMMARY_BRANCH_NAME, 'unknown-branch');
+          const specSlug = sanitize(
+            String(process.env.SUMMARY_SPEC_PATH || '')
+              .replace(/^cypress[\\/]/i, '')
+              .replace(/[\\/]/g, '-')
+              .replace(/\.(cy|spec)\.[^.]+$/i, '')
+              .replace(/\.[^.]+$/, ''),
+            'spec'
+          );
+          const runNumber = String(process.env.SUMMARY_RUN_NUMBER || '0');
+          const runAttempt = Number(process.env.SUMMARY_RUN_ATTEMPT || '1');
+          const runLabel =
+            runAttempt > 1
+              ? `${runNumber}-attempt-${runAttempt}-${specSlug}`
+              : `${runNumber}-${specSlug}`;
+
+          process.stdout.write(JSON.stringify({ branchSlug, runLabel }));
+          NODE
+          )"
+          branch_slug="$(node -p "JSON.parse(process.argv[1]).branchSlug" "$summary_json")"
+          run_label="$(node -p "JSON.parse(process.argv[1]).runLabel" "$summary_json")"
           {
             echo "## Cypress Report"
             echo
