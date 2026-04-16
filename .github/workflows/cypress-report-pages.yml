@@ -116,11 +116,6 @@ jobs:
       - name: Write run summary
         if: always()
         shell: bash
-        env:
-          SUMMARY_BRANCH_NAME: ${{ github.ref_name }}
-          SUMMARY_SPEC_PATH: ${{ inputs.spec_path }}
-          SUMMARY_RUN_NUMBER: ${{ github.run_number }}
-          SUMMARY_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           pages_base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           {
@@ -131,42 +126,11 @@ jobs:
             echo "- Spec: \`${{ inputs.spec_path }}\`"
             echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             if [ "${{ steps.publish_history.outputs.published }}" = "true" ]; then
-              summary_json="$(node <<'NODE'
-              const sanitize = (value, fallback = 'item') => {
-                const normalized = String(value || '')
-                  .trim()
-                  .toLowerCase()
-                  .replace(/[^a-z0-9._-]+/g, '-')
-                  .replace(/-+/g, '-')
-                  .replace(/^-|-$/g, '')
-                  .slice(0, 80);
-                return normalized || fallback;
-              };
-
-              const branchSlug = sanitize(process.env.SUMMARY_BRANCH_NAME, 'unknown-branch');
-              const specSlug = sanitize(
-                String(process.env.SUMMARY_SPEC_PATH || '')
-                  .replace(/^cypress[\\/]/i, '')
-                  .replace(/[\\/]/g, '-')
-                  .replace(/\.(cy|spec)\.[^.]+$/i, '')
-                  .replace(/\.[^.]+$/, ''),
-                'spec'
-              );
-              const runNumber = String(process.env.SUMMARY_RUN_NUMBER || '0');
-              const runAttempt = Number(process.env.SUMMARY_RUN_ATTEMPT || '1');
-              const runLabel =
-                runAttempt > 1
-                  ? `${runNumber}-attempt-${runAttempt}-${specSlug}`
-                  : `${runNumber}-${specSlug}`;
-
-              process.stdout.write(JSON.stringify({ branchSlug, runLabel }));
-              NODE
-              )"
-              branch_slug="$(node -p "JSON.parse(process.argv[1]).branchSlug" "$summary_json")"
-              run_label="$(node -p "JSON.parse(process.argv[1]).runLabel" "$summary_json")"
+              metadata_file=".gh-pages/latest/metadata.json"
+              report_path="$(node -p "const fs=require('fs'); const file=process.argv[1]; const data=JSON.parse(fs.readFileSync(file,'utf8')); process.stdout.write(data.reportPath || '')" "$metadata_file")"
               echo "- Latest report: ${pages_base}/latest/"
               echo "- History index: ${pages_base}/"
-              echo "- Run report: ${pages_base}/runs/${branch_slug}/${run_label}/"
+              echo "- Run report: ${pages_base}/${report_path}/"
             else
               echo "- Report status: not published"
             fi
