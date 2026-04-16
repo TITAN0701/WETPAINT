@@ -1,23 +1,39 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-16T02:48:37.193Z",
+  "generatedAt": "2026-04-16T03:08:48.265Z",
   "latest": {
-    "id": "main-39-e2e-features-login_flow-lg",
+    "id": "main-40-e2e-features-login_flow-lg",
     "branch": "main",
     "branchSlug": "main",
     "specPath": "cypress/e2e/features/Login_flow/LG.cy.js",
     "specSlug": "e2e-features-login_flow-lg",
-    "runNumber": 39,
+    "runNumber": 40,
     "runAttempt": 1,
-    "runLabel": "39-e2e-features-login_flow-lg",
-    "createdAt": "2026-04-16T02:48:37.193Z",
-    "commitSha": "7ed6b6d2a3d4fdf99fb1f16113ba73df54895a74",
-    "commitShortSha": "7ed6b6d",
-    "workflowRunUrl": "https://github.com/TITAN0701/WETPAINT/actions/runs/24489285711",
-    "reportPath": "runs/main/39-e2e-features-login_flow-lg",
+    "runLabel": "40-e2e-features-login_flow-lg",
+    "createdAt": "2026-04-16T03:08:48.265Z",
+    "commitSha": "e3cfaafc198b6a0b8bf550f44e1d86f09948d4c3",
+    "commitShortSha": "e3cfaaf",
+    "workflowRunUrl": "https://github.com/TITAN0701/WETPAINT/actions/runs/24489853588",
+    "reportPath": "runs/main/40-e2e-features-login_flow-lg",
     "isLatest": true
   },
   "runs": [
+    {
+      "id": "main-40-e2e-features-login_flow-lg",
+      "branch": "main",
+      "branchSlug": "main",
+      "specPath": "cypress/e2e/features/Login_flow/LG.cy.js",
+      "specSlug": "e2e-features-login_flow-lg",
+      "runNumber": 40,
+      "runAttempt": 1,
+      "runLabel": "40-e2e-features-login_flow-lg",
+      "createdAt": "2026-04-16T03:08:48.265Z",
+      "commitSha": "e3cfaafc198b6a0b8bf550f44e1d86f09948d4c3",
+      "commitShortSha": "e3cfaaf",
+      "workflowRunUrl": "https://github.com/TITAN0701/WETPAINT/actions/runs/24489853588",
+      "reportPath": "runs/main/40-e2e-features-login_flow-lg",
+      "isLatest": true
+    },
     {
       "id": "main-39-e2e-features-login_flow-lg",
       "branch": "main",
@@ -32,7 +48,7 @@
       "commitShortSha": "7ed6b6d",
       "workflowRunUrl": "https://github.com/TITAN0701/WETPAINT/actions/runs/24489285711",
       "reportPath": "runs/main/39-e2e-features-login_flow-lg",
-      "isLatest": true
+      "isLatest": false
     },
     {
       "id": "main-38-e2e-features-login_flow-lg",
