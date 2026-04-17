@@ -2,10 +2,21 @@
 import loginIOSPageObject from '../e2e/page-objects/common/loginIOS';
 import DashboardPageObject from '../e2e/page-objects/common/dashboard';
 
-const LOGIN_ORIGIN = 'http://61.220.55.161:47080/login';
 const loginPage = new loginPageObject();
 const loginIOSPage = new loginIOSPageObject();
 const dashboardPage = new DashboardPageObject();
+
+function getBaseUrl() {
+  return String(Cypress.config('baseUrl') || '').replace(/\/+$/, '');
+}
+
+function getLoginUrl() {
+  return `${getBaseUrl()}/login`;
+}
+
+function getLoginApiUrl() {
+  return `${getBaseUrl()}/cskapi/api/auth/login`;
+}
 
 function isAllowedPostLoginPath(pathname) {
   const normalizedPath = String(pathname || '').toLowerCase();
@@ -43,7 +54,7 @@ Cypress.Commands.add('FirstPageLogin', () => {
 //設定手機login指令，確保登入API回應
 Cypress.Commands.add('loginIOS', (account, password) => {
   cy.intercept('POST', '**/login**').as('login');
-  cy.visit(LOGIN_ORIGIN).then(() => {
+  cy.visit(getLoginUrl()).then(() => {
     loginIOSPage.Elementsarevisble();
   });
   cy.get('#username').clear().type(account);
@@ -97,7 +108,7 @@ Cypress.Commands.add('loginIOS', (account, password) => {
 Cypress.Commands.add('login', (account, password) => {
   cy.intercept('POST', '**/login**').as('login');
 
-  cy.visit(LOGIN_ORIGIN).then(() => {
+  cy.visit(getLoginUrl()).then(() => {
     loginPage.Elementsarevisble();
   });
 
@@ -162,7 +173,7 @@ Cypress.Commands.add('logout', () => {
 });
 // 設定loginByAPI指令，直接透過API登入並將token存入sessionStorage，適用於需要快速登入的測試場景
 Cypress.Commands.add('loginByAPI', (account, password) => {
-  cy.request('POST', 'http://61.220.55.161:47080/cskapi/api/auth/login', {
+  cy.request('POST', getLoginApiUrl(), {
     account,
     password,
   }).then((response) => {

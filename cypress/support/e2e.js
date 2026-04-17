@@ -2,7 +2,6 @@ import 'allure-cypress';
 import { attachmentPath, ContentType } from 'allure-cypress';
 import './commands.js';
 import './user_account.js';
-import './common.js';
 import 'cypress-mailslurp';
 import 'cypress-test-email';
 
