@@ -480,7 +480,7 @@ function verifygetlatestResetPassword(email, options = {}) {
             if (!roundcubeInboxUrl) {
                 throw new Error(
                     `Could not get reset link/token for ${email}. ` +
-                    'Set ROUNDCUBE_INBOX_URL in cypress env, or implement getLatestResetPassword task.'
+                    'Set RESET_PASSWORD_LINK or RESET_PASSWORD_TOKEN, or configure ROUNDCUBE_INBOX_URL.'
                 );
             }
 

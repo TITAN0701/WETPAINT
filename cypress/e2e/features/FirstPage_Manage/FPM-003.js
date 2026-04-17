@@ -1,4 +1,9 @@
 function assertCellValue(content, expected) {
+    if (typeof expected === 'function') {
+        expected(content);
+        return;
+    }
+
     if (expected instanceof RegExp) {
         expect(content).to.match(expected);
         return;
@@ -43,9 +48,29 @@ function verifyCheckAIQuestionPage(index, description) {
     verifyCellByIndex(index, description, 3);
 }
 
+function verifyCellIsNotEmpty(index, minColumns = 3) {
+    verifyCellByIndex(index, (content) => {
+        expect(content).to.be.a('string').and.not.be.empty;
+    }, minColumns);
+}
+
+function verifyRowActionButtons(rowIndex = 0, minButtons = 1) {
+    ensureQuestionTableVisible(3);
+
+    cy.get('table tbody tr:visible')
+        .eq(rowIndex)
+        .find('td')
+        .last()
+        .find('button:visible')
+        .its('length')
+        .should('be.gte', minButtons);
+}
+
 export {
     verifyCheckQuestionfunction,
     verifyCheckImagePagefunction,
     veriifyCheckImagePageApply,
-    verifyCheckAIQuestionPage
+    verifyCheckAIQuestionPage,
+    verifyCellIsNotEmpty,
+    verifyRowActionButtons
 };

@@ -1,28 +1,5 @@
 import LoginSys from '../../page-objects/Login_flow/LoginWetpaint';
 
-function verifygetoptFormProxiedEmail(email, retries = 7) {
-  return cy.env('PROXIEDMAIL_API_BASE').then((apiBase) => {
-    return cy.request({
-      method: 'GET',
-      url: `${apiBase}/en/settings`,
-      failOnStatusCode: false,
-    }).then(({ body }) => {
-      const text = JSON.stringify(body || '');
-      const otp = text.match(/\b\d{6}\b/)?.[0];
-
-      if (otp) {
-        return otp;
-      }
-
-      if (retries <= 0) {
-        throw new Error(`Could not find OTP for ${email}`);
-      }
-
-      return cy.wait(2000).then(() => verifygetoptFormProxiedEmail(email, retries - 1));
-    });
-  });
-}
-
 function getLatestRegisterAccountPath() {
   const reportRunId = String(Cypress.env('REPORT_RUN_ID') || 'local').trim() || 'local';
   const safeRunId = reportRunId.replace(/[^A-Za-z0-9._-]/g, '-');
@@ -391,73 +368,12 @@ function verifyGetEmailotpAPI(options = {}) {
   });
 }
 
-function verifyGetRegisterOtpFromMailbox(email, options = {}) {
-  const {
-    source = 'auto',
-    retries = 7,
-    roundcubeInboxUrl: inboxUrlFromOptions,
-    roundcubeAccount: accountFromOptions,
-    roundcubePassword: passwordFromOptions,
-    mailRetries = 20,
-    mailIntervalMs = 3000,
-  } = options;
-
-  const roundcubeInboxUrl =
-    inboxUrlFromOptions ||
-    Cypress.env('ROUNDCUBE_INBOX_URL') ||
-    Cypress.env('ROUNDCUBE_URL');
-  const roundcubeAccount =
-    accountFromOptions ||
-    Cypress.env('ROUNDCUBE_ACCOUNT');
-  const roundcubePassword =
-    passwordFromOptions ||
-    Cypress.env('ROUNDCUBE_PASSWORD');
-
-  const preferRoundcube =
-    source === 'roundcube' || (source === 'auto' && Boolean(roundcubeInboxUrl));
-
-  if (preferRoundcube) {
-    if (!roundcubeInboxUrl) {
-      throw new Error(
-        'source=roundcube but no inbox url found. ' +
-        'Pass options.roundcubeInboxUrl or set ROUNDCUBE_INBOX_URL.'
-      );
-    }
-
-    return getRegisterOtpFromRoundcube(
-      roundcubeInboxUrl,
-      roundcubeAccount,
-      roundcubePassword,
-      mailRetries,
-      mailIntervalMs
-    );
-  }
-
-  return verifygetoptFormProxiedEmail(email, retries).then((otp) => {
-    if (otp) return otp;
-
-    if (!roundcubeInboxUrl) {
-      throw new Error(`Could not get register OTP for ${email}.`);
-    }
-
-    return getRegisterOtpFromRoundcube(
-      roundcubeInboxUrl,
-      roundcubeAccount,
-      roundcubePassword,
-      mailRetries,
-      mailIntervalMs
-    );
-  });
-}
-
 export {
   createRegisterInboxWithMailSlurp,
   loginWithLatestRegisterAccount,
   readLatestRegisterAccount,
   saveLatestRegisterAccount,
-  verifygetoptFormProxiedEmail,
   verifyGetRegisterOtpFromMailSlurp,
-  verifyGetRegisterOtpFromMailbox,
   verifysetupsendotpAPI,
   verifyGetEmailotpAPI,
 };
