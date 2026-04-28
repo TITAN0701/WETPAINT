@@ -2,176 +2,179 @@
 
 ## 前置條件
 
-在運行測試之前，請確保你的環境已安裝：
+在運行測試之前，請確保環境已安裝：
 
-- Node.js ([建議版本])
-- npm 或 yarn
+- Node.js
+- npm
 
 ## 安裝
 
-1.  導航到專案的根目錄。
-2.  安裝專案依賴（包括 Cypress）：
-    ```bash
-    npm install
-    ```
-3.  下載cypres-xpath
-
 ```bash
-npm install -D cypress-xpath
-```
-
-4. 安裝排版工具
-
-```bash
-npx husky-init; npx husky set .husky/pre-commit "npx lint-staged"; npx husky install
+npm install
 ```
 
 ## 如何運行測試
 
 ### GUI
 
-這會打開 Cypress GUI，你可以在瀏覽器中互動地選擇和運行測試檔案：
+打開 Cypress GUI，可在瀏覽器中選擇並執行測試：
 
 ```bash
-npx cypress open
+npm run cy:open
 ```
 
 ### CLI
 
-在終端機中運行 (無頭模式 Headless)
-這會在終端機中運行所有測試，通常用於 CI/CD 環境：
+執行全部測試：
 
-```Bash
-npx cypress run
+```bash
+npm run cy:run
 ```
 
-運行特定的測試檔案或資料夾
-你可以在 npx cypress run 命令後指定要運行的測試檔案或資料夾的路徑：
+使用 Chrome 執行：
 
-```Bash
-npx cypress run --spec cypress/e2e/auth/login.cy.js
-# 運行 auth 資料夾下的所有測試
-npx cypress run --spec cypress/e2e/auth/
+```bash
+npm run cy:run:chrome
 ```
 
-指定瀏覽器運行
-可以在運行命令後使用 --browser 旗標指定瀏覽器 (例如 chrome, firefox, edge)：
+執行指定 spec：
 
-```Bash
-npx cypress run --browser chrome
+```bash
+npx cypress run --spec cypress/e2e/features/FrontDesk_flow/FDT.cy.js
+```
+
+產生報表：
+
+```bash
+npm run report
 ```
 
 ## 專案資料夾結構
 
-本測試專案的程式碼按照功能模組組織，結構如下：
+目前專案主要結構如下：
 
-```
+```text
 cypress/
-├── e2e/                                  <- 存放你的測試情境檔案 (使用頁面物件)
-│   ├── feature/                          <- 各項功能測試
-│   │   ├── portal/                    <- 對應 儀錶板
-│   │   │   └── portal.cy.js
-│   │   ├── product_info/                 <- 對應 產品詳請
-│   │   │   └── PRO.cy.js
-│   │   ├── organization_management/      <- 組織管理
-│   │   │  └── OGM.cy.js
-│   │   ├── people_management/            <- 人員設置
-│   │   │  └── PPM.cy.js
-│   │   ├── login_track/                  <- 登入軌跡
-│   │   │  └── LGT.cy.js
-│   │   ├── system_setting/               <- 對應 系統設置
-│   │   │  └── SYS.cy.js
-│   │   ├── account/                      <- 對應 帳戶
-│   │   │  └── ACC.cy.js
-│   │   ├── common/                       <- 一些跨模組或通用情境的測試，例如登入、導覽等
-│   │   │  └── login-flow.cy.js
-│   ├── page-objects/                         <- 存放頁面物件檔案，按功能分資料夾，結構與 e2e/features/ 類似
-│       ├── dashboard/
-│       │   └── DashboardPage.js
-│       ├── ...
-│       └── common/                           <- 存放跨頁面的通用頁面物件 (如側邊欄選單本身、頂欄、通用的彈出視窗等)
-│           ├── Header.js
-│           └── AlertDialog.js
-│
+├── e2e/
+│   ├── features/                         <- 測試案例主體
+│   │   ├── FrontDesk_flow/               <- 前台流程
+│   │   ├── FirstPage_Manage/             <- 後台首頁管理
+│   │   ├── Login_flow/                   <- 登入流程
+│   │   ├── Register_Account/             <- 註冊流程
+│   │   ├── FirstLogin_flow/              <- 首次登入流程
+│   │   └── common/                       <- 共用測試流程
+│   └── page-objects/                     <- 頁面操作封裝
+│       ├── frontdesk_manage/
+│       ├── firstpage_manage/
+│       ├── Login_flow/
+│       ├── Register_Account/
+│       └── common/
+├── fixtures/                             <- 測試資料
 ├── support/
-│   ├── commands.js                       <- 可以按功能將自訂命令拆分到子檔案中，再在 e2e.js 中匯入
+│   ├── commands.js                       <- 共用 Cypress 指令
 │   ├── e2e.js
-│   └── ...
-└── cypress.config.js
+│   └── user_account.js                   <- 測試帳號
+├── screenshots/                          <- 測試失敗截圖，屬於產物
+└── downloads/
+
+reports/                                 <- Allure 報表資料
+scripts/                                 <- 報表相關腳本
+cypress.config.js                        <- Cypress 設定
 ```
 
 ## 測試約定與模式
 
-本專案遵循以下測試約定：
+### Page Object Model
 
-1.  **頁面物件模型 (Page Object Model - POM):**
-    - 每個主要頁面或功能區塊在 `cypress/page-objects/` 資料夾下有對應的 `.js` 頁面物件檔案。
-    - 頁面命名對照前端頁面命名，便於查找。
-    - 頁面物件封裝了頁面元素的選擇器和與這些元素互動的方法。
-    - 測試檔案 (`cypress/e2e/` 下的 `.cy.js` 檔案) 應透過頁面物件的方法來與 UI 互動，而不是直接使用 `cy.get()` 等命令。
-2.  **元素定位:**
-    - 若前端撰寫時可配合，則使用 `data-cy` 屬性來定位元素，例如 `[模組名稱]-[元素用途]` 或 `[元件名稱]-[元素用途]`，即可使用`cy.get('[data-cy="..."]')`的穩定方式選取元素。
-    - 所有選擇器定義於POM的constructor中，並附上註解便於管理與調整。
-3.  **自訂命令 (Custom Commands):**
-    - 將常用的重複操作（如登入、填寫常見表單）封裝在 `cypress/support/commands.js` (或其子檔案) 中的自訂命令中。
-    - 範例：`cy.login(username, password)`。
+- 頁面操作請優先寫在 `cypress/e2e/page-objects/`。
+- 測試案例檔只負責流程與驗證，不建議堆大量 `cy.get()`。
+- 如果頁面按鈕、欄位或導覽邏輯改變，優先修改 page object。
 
-## 開發環境與程式碼規範
+### Features 測試檔
 
-為了確保所有開發者都有一致的開發體驗與程式碼品質，本專案整合了 ESLint、Prettier 與 VS Code 相關設定。請遵循以下步驟來設定你的開發環境。
+- `.cy.js`：測試流程入口，例如 `FDT.cy.js`、`FPM.cy.js`。
+- `FDT-004.js`、`FDT-005.js` 這類檔案：單一案例的檢查邏輯。
+- `FDT_helpers.js`：同流程共用資料或 helper。
 
-### 1. 安裝推薦的 VS Code 擴充套件
+## 通常需要修改的地方
 
-為了讓自動化工具順利運作，請在 VS Code 中安裝以下擴充套件：
+- 測試流程改變：修改對應 `.cy.js`。
+- 頁面文字或驗證規則改變：修改對應案例檔，例如 `FDT-004.js`、`FDT-005.js`。
+- 頁面操作方式改變：修改 `cypress/e2e/page-objects/`。
+- 測試帳號改變：修改 `cypress/support/user_account.js`。
+- 測試資料改變：修改 `cypress/fixtures/`。
+- baseUrl、報表設定改變：修改 `cypress.config.js`。
+- npm 套件改變：修改 `package.json`，並讓 `package-lock.json` 跟著更新。
 
-1.  **ESLint**:
-    - 擴充套件 ID: `dbaeumer.vscode-eslint`
-    - 用途：即時檢查程式碼中的語法錯誤和風格問題。設定檔為 `.eslintrc.js`。
+## 通常不需修改的地方
 
-2.  **Prettier - Code formatter**:
-    - 擴充套件 ID: `esbenp.prettier-vscode`
-    - 用途：統一程式碼格式。設定檔為 `.prettierrc.js`。
+- `node_modules/`
+- `.git/`
+- `cypress/screenshots/`
+- `reports/.generated/`
+- `package-lock.json`，除非有安裝、移除或更新 npm 套件。
 
-### 2. VS Code 設定
+## 新增測試方式
 
-本專案已包含推薦的 VS Code 設定檔 (`.vscode/settings.json`)，當你用 VS Code 開啟此專案時，應會自動套用。主要設定包括：
+1. 在對應功能資料夾新增案例檔，例如：
+   - `cypress/e2e/features/FrontDesk_flow/FDT-006.js`
+   - `cypress/e2e/features/FirstPage_Manage/FPM-006.js`
 
-- **儲存時自動格式化 (Format on Save)**：當你儲存檔案時，Prettier 會自動格式化你的程式碼。
-- **儲存時自動修復 (ESLint Fix on Save)**：ESLint 會自動修復它能處理的簡單問題。
-- **預設格式化工具**：已將 Prettier 設定為 JavaScript、TypeScript 等檔案的預設格式化工具。
-- **LF 行尾字元**：統一使用 `\n` (LF) 作為行尾字元，避免在 Windows 和 macOS/Linux 之間產生版本控制差異。
+2. 在對應 `.cy.js` 匯入並呼叫：
 
-如果你的自動格式化沒有生效，請檢查你的 VS Code 使用者設定，確保它沒有覆蓋專案的設定。
+```js
+import * as TestFDT006 from './FDT-006';
+```
 
-### 3. 主要程式碼規範
+3. 如需新增頁面操作，放到 `page-objects/`。
 
-我們的程式碼風格主要由 Prettier 和 ESLint 強制執行，重點如下：
+4. 如需新增固定測試資料，放到 `fixtures/`。
 
-- **程式碼寬度**：單行不超過 `100` 個字元。
-- **引號**：使用單引號 (`'`) 而非雙引號 (`"`)。
-- **分號**：句末必須加上分號 (`;`)。
-- **結尾逗號**：在多行物件或陣列的最後一個元素後加上逗號 (`,`)。
-- **箭頭函數括號**：箭頭函數的參數一律使用括號，例如 `(arg) => {}`。
-- **全局變數**：
-  - 已啟用 `browser`、`node` 和 `cypress/globals` 環境。
-  - 可以直接在 `.cy.js` 檔案中使用 `cy`、`describe`、`it` 等 Cypress 提供的全局變數，不會觸發 `no-undef` 錯誤。
+## 帳號使用原則
 
-這些規則定義在 `.prettierrc.js` 和 `.eslintrc.js` 中，除非有特殊理由，否則不應修改。
+測試帳號統一放在 `cypress/support/user_account.js`。
 
-### 4.Git 儲存庫
+- 管理者：`globalThis.administrator_1`
+- 家長：`globalThis.administrator_2`
 
-- 連結： [vigi-e2e](http://192.168.200.181:8087/rxp-platform/rxp-e2e)
-- 庫命名策略： kebab-case
-- 分支策略： 主分支 main, 開發分支 dev, 功能分支 feature/\*
-- 提交規範： 參考 Conventional Commits 規範，必要含有 {type}: {subject} ，其他部分可省略，feature/\* 分支接受 minor edit，變基回主分支快進前須壓合
+不要在測試案例中重複寫死帳號密碼，請引用 `globalThis` 裡的帳號。
 
-## Testcase Number命名規則
+## FAQ / 關於我們文字檢查
 
-此專案 Testcases 編號一律使用 V開頭+測試情境或元件之英文縮寫
-例如:
-/featuers/common/login/login.cy.js 之testcase命名為VUP_XXX，源自於describe上的敘述VIGI-USERPERMISSION => VUP
-每個編號數字都為3位，從001開始，編號順序無意義，方便追蹤用
+- 前台 FAQ：`cypress/e2e/features/FrontDesk_flow/FDT-004.js`
+- 前台關於我們：`cypress/e2e/features/FrontDesk_flow/FDT-005.js`
+- 後台關於我們：`cypress/e2e/features/FirstPage_Manage/FPM-005.js`
+
+文字檢查請以目前系統畫面或 DOM 內容為準。若畫面有換行、表格欄位或 `span` 拆字，可以分段檢查，但內容需完整覆蓋。
+
+## 開發注意事項
+
+- 提交前移除不需要的 `it.only` / `describe.only`。
+- 中文標點需和系統畫面一致，例如 `，`、`。`、`.`、`『』`。
+- 修改後至少執行語法檢查：
+
+```bash
+node -c cypress/e2e/features/FrontDesk_flow/FDT-004.js
+```
+
+必要時再執行指定 spec：
+
+```bash
+npx cypress run --spec cypress/e2e/features/FrontDesk_flow/FDT.cy.js
+```
+
+## Testcase Number 命名規則
+
+測試案例以功能代碼開頭，例如：
+
+- `FDT`：FrontDesk Flow
+- `FPM`：First Page Management
+- `LG`：Login Flow
+- `RG`：Register Account
+- `FLG`：First Login Flow
+
+編號使用 3 位數，例如 `FDT-001`、`FDT-004`。
 
 ## 補充
 
-如需產出目前版本的測試報表，請參考 `reports/README.md`。
+如需產出或查看目前版本的測試報表，請參考 `reports/README.md`。
