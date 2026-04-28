@@ -53,8 +53,8 @@ describe('Register flow', () => {
     describe('RG-004 於註冊頁面找到Email欄位，並輸入Email資訊', () => {
         it('驗證Email欄位、輸入文字', () => {
             loginSys.clickRegisterButton();
-            rgaccount.clickRegisterEmailinput('p9geepmczk@pxdmail.net');
-            TestRG004.verifyEmailInput('p9geepmczk@pxdmail.net');
+            rgaccount.clickRegisterEmailinput(globalThis.administrator_2.account);
+            TestRG004.verifyEmailInput(globalThis.administrator_2.account);
             
         }) 
     })

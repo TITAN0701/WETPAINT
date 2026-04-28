@@ -191,7 +191,7 @@ describe('FrontDesk Flow - 家長權限', () => {
 
     beforeEach(() => {
         cy.viewport(1920, 1080);
-        cy.login(globalThis.administrator_6.account, globalThis.administrator_6.password);
+        cy.login(globalThis.administrator_2.account, globalThis.administrator_2.password);
     });
 
     it('FDT-001 家長登入前台頁面', () => {
@@ -284,7 +284,7 @@ describe('FrontDesk Flow - 家長權限，開始檢測流程  (模擬手機)', (
         // iphone 12 pro 畫面大小 landscape:橫向, portrait:直向
         // cy.viewport('iphone-xr', 'landscape');
         cy.viewport('iphone-x', 'portrait');
-        cy.loginIOS(globalThis.administrator_6.account, globalThis.administrator_6.password);
+        cy.loginIOS(globalThis.administrator_2.account, globalThis.administrator_2.password);
     });
 
     // 模擬手機的測試
