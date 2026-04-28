@@ -1,21 +1,25 @@
 import firstpagemanage from './firstpagemanage';
 
-
-class aboutuslist extends firstpagemanage{
-    goToChildListPage() {
+class aboutuslist extends firstpagemanage {
+    goToAboutUsPage() {
         this.clickAboutWeButton();
         this.verifyAboutWeButtonListPageLoaded();
     }
 
+    goToChildListPage() {
+        this.goToAboutUsPage();
+    }
+
     verifyAboutWeButtonListPageLoaded() {
+        cy.location('pathname', { timeout: 10000 }).should('include', '/admin/about');
         cy.contains('div:visible', '關於我們').should('be.visible');
         cy.contains('button:visible', '編輯').should('be.visible');
     }
 
-    clickEditButton(introductype, confirmButton){
+    clickEditButton(introductype, confirmButton) {
         cy.contains('button', '編輯').click();
         cy.contains('h2:visible', '編輯關於我們').closest('div.items-center').should('exist');
-        switch(introductype){
+        switch (introductype) {
             case '本站介紹':
                 cy.contains('button:visible', ' 本站介紹 ').should('exist').click();
                 cy.contains('label:visible', '本站介紹').should('be.visible');
@@ -23,7 +27,7 @@ class aboutuslist extends firstpagemanage{
                 cy.contains('label:visible', '特色項目').should('be.visible');
                 cy.contains('label:visible', '特色區塊圖片').should('be.visible');
                 cy.contains('button:visible', ' 新增項目 ').scrollTo('bottom').should('be.visible');
-                
+
                 cy.contains('label:visible', '合作單位說明').scrollTo('bottom').should('be.visible');
                 cy.contains('label:visible', '合作單位 Logo（最少 1 張，最多 10 張）').scrollTo('bottom').should('be.visible');
                 cy.contains('button:visible', ' 新增合作單位 ').scrollTo('bottom').should('be.visible');
@@ -44,13 +48,12 @@ class aboutuslist extends firstpagemanage{
                 break;
         }
 
-        if(confirmButton === 'yes'){
+        if (confirmButton === 'yes') {
             cy.contains('button', ' 確認 ').click();
-        }else{
+        } else {
             cy.contains('button', ' 取消 ').click();
         }
     }
-
 }
 
 export default aboutuslist;

@@ -33,11 +33,6 @@ globalThis.administrator_5= {
   password_5: 'password123',
 };
 
-globalThis.administrator_6= {
-  account: 'p9geepmczk@pxdmail.net',
-  password: 'TestPassword123'
-};
-
 globalThis.UpdatePassword= {
   account: 'admin@example.com',
   password: 'password123'

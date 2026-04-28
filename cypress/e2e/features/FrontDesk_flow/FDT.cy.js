@@ -114,16 +114,13 @@ describe('FrontDesk Flow - 管理者權限', () => {
         firstPageList.clickEditCancelFileButton();
     });
 
-    it('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
+    it.only('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
         adminPage.clickOtherPageItem('前往前台');
         TestFDT001.verifyFrontdesklogin();
 
         faqPageList.clickFaqButton();
         TestFDT004.verifyFQAMessage();
-        TestFDT004.verifyAccordionCanTrigger(0, '我的孩子可以加入研究案嗎?');
-        TestFDT004.verifyAccordionCanTrigger(2, '我的孩子參加研究，會如何進行評估施測呢? 會有侵入性治療嗎?', ['可以','LINE',]);
-
-        //bugs 
+        TestFDT004.verifyAllFaqAccordions();
         TestFDT004.verifyContactButtonCanTrigger();
     });
 
@@ -134,6 +131,7 @@ describe('FrontDesk Flow - 管理者權限', () => {
         aboutUsList.goToAboutUsPage();
         TestFDT005.verifyAboutFrontPageLoaded();
         TestFDT005.verifyAboutFrontPageCoreBlocks();
+        TestFDT005.verifyAboutTeamSectionsCanSwitch();
         TestFDT005.verifyNoEditActionOnFrontPage();
     });
 });
@@ -190,7 +188,7 @@ describe('FrontDesk Flow - 家長權限', () => {
 
     beforeEach(() => {
         cy.viewport(1920, 1080);
-        cy.login(globalThis.administrator_6.account, globalThis.administrator_6.password);
+        cy.login(globalThis.administrator_2.account, globalThis.administrator_2.password);
     });
 
     it('FDT-001 家長登入前台頁面', () => {
@@ -256,8 +254,7 @@ describe('FrontDesk Flow - 家長權限', () => {
     it('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
         faqPageList.clickFaqButton();
         TestFDT004.verifyFQAMessage();
-        TestFDT004.verifyAccordionCanTrigger(0, '我的孩子可以加入研究案嗎?');
-        TestFDT004.verifyAccordionCanTrigger(2, '我的孩子參加研究，會如何進行評估施測呢? 會有侵入性治療嗎?', ['可以','LINE',]);
+        TestFDT004.verifyAllFaqAccordions();
 
         //bugs 
         TestFDT004.verifyContactButtonCanTrigger();
@@ -267,6 +264,7 @@ describe('FrontDesk Flow - 家長權限', () => {
         aboutUsList.goToAboutUsPage();
         TestFDT005.verifyAboutFrontPageLoaded();
         TestFDT005.verifyAboutFrontPageCoreBlocks();
+        TestFDT005.verifyAboutTeamSectionsCanSwitch();
         TestFDT005.verifyNoEditActionOnFrontPage();
     });
 
@@ -282,7 +280,7 @@ describe('FrontDesk Flow - 家長權限，開始檢測流程  (模擬手機)', (
         // iphone 12 pro 畫面大小 landscape:橫向, portrait:直向
         // cy.viewport('iphone-xr', 'landscape');
         cy.viewport('iphone-x', 'portrait');
-        cy.loginIOS(globalThis.administrator_6.account, globalThis.administrator_6.password);
+        cy.loginIOS(globalThis.administrator_2.account, globalThis.administrator_2.password);
     });
 
     // 模擬手機的測試
