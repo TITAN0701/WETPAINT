@@ -127,13 +127,14 @@ describe('FrontDesk Flow - 管理者權限', () => {
         TestFDT004.verifyContactButtonCanTrigger();
     });
 
-    it('FDT-005 於頁面中找到關於我們的項目並點擊，檢視特定字串', () => {
+    it.only('FDT-005 於頁面中找到關於我們的項目並點擊，檢視特定字串', () => {
         adminPage.clickOtherPageItem('前往前台');
         TestFDT001.verifyFrontdesklogin();
 
         aboutUsList.goToAboutUsPage();
         TestFDT005.verifyAboutFrontPageLoaded();
         TestFDT005.verifyAboutFrontPageCoreBlocks();
+        TestFDT005.verifyAboutTeamSectionsCanSwitch();
         TestFDT005.verifyNoEditActionOnFrontPage();
     });
 });
@@ -267,6 +268,7 @@ describe('FrontDesk Flow - 家長權限', () => {
         aboutUsList.goToAboutUsPage();
         TestFDT005.verifyAboutFrontPageLoaded();
         TestFDT005.verifyAboutFrontPageCoreBlocks();
+        TestFDT005.verifyAboutTeamSectionsCanSwitch();
         TestFDT005.verifyNoEditActionOnFrontPage();
     });
 

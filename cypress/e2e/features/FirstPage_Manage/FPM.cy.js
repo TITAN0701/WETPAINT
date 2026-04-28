@@ -265,7 +265,7 @@ describe('First Page Management', () => {
         });
 
 
-        it.only('於邀請管理頁面中，點擊篩選器，並檢查底下的表格字串', () => {
+        it('於邀請管理頁面中，點擊篩選器，並檢查底下的表格字串', () => {
             firstpage.clickInviteButton();
             invitelist.clickFilterButton('由新到舊', '前台註冊');
             invitelist.clickfilterConfirm('yes');
@@ -275,14 +275,14 @@ describe('First Page Management', () => {
         })
 
     })
-    describe('FPM-005 檢查關於我們', () => {
+    describe.only('FPM-005 檢查關於我們', () => {
         it('使用者登入頁面後找到關於我們，並點擊進入該頁面', () => {
             firstpage.clickAboutWeButton();
             TestFPM005.verifyAboutPageLoaded();
             TestFPM005.verifyAboutPageCoreBlocks();
         })
 
-        it('使用者可開啟並關閉關於我們編輯視窗', () => {
+        it('使用者可開啟關於我們編輯視窗，驗證所有文字並關閉', () => {
             firstpage.clickAboutWeButton();
             TestFPM005.verifyAboutEditDialogCanOpenAndClose();
         })
