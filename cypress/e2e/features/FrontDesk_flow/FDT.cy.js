@@ -121,8 +121,6 @@ describe('FrontDesk Flow - 管理者權限', () => {
         faqPageList.clickFaqButton();
         TestFDT004.verifyFQAMessage();
         TestFDT004.verifyAllFaqAccordions();
-
-        //bugs 
         TestFDT004.verifyContactButtonCanTrigger();
     });
 
