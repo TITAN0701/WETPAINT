@@ -114,20 +114,19 @@ describe('FrontDesk Flow - 管理者權限', () => {
         firstPageList.clickEditCancelFileButton();
     });
 
-    it('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
+    it.only('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
         adminPage.clickOtherPageItem('前往前台');
         TestFDT001.verifyFrontdesklogin();
 
         faqPageList.clickFaqButton();
         TestFDT004.verifyFQAMessage();
-        TestFDT004.verifyAccordionCanTrigger(0, '我的孩子可以加入研究案嗎?');
-        TestFDT004.verifyAccordionCanTrigger(2, '我的孩子參加研究，會如何進行評估施測呢? 會有侵入性治療嗎?', ['可以','LINE',]);
+        TestFDT004.verifyAllFaqAccordions();
 
         //bugs 
         TestFDT004.verifyContactButtonCanTrigger();
     });
 
-    it.only('FDT-005 於頁面中找到關於我們的項目並點擊，檢視特定字串', () => {
+    it('FDT-005 於頁面中找到關於我們的項目並點擊，檢視特定字串', () => {
         adminPage.clickOtherPageItem('前往前台');
         TestFDT001.verifyFrontdesklogin();
 
@@ -257,8 +256,7 @@ describe('FrontDesk Flow - 家長權限', () => {
     it('FDT-004 於頁面中找到FAQs的項目並點擊，檢視特定字串', () => {
         faqPageList.clickFaqButton();
         TestFDT004.verifyFQAMessage();
-        TestFDT004.verifyAccordionCanTrigger(0, '我的孩子可以加入研究案嗎?');
-        TestFDT004.verifyAccordionCanTrigger(2, '我的孩子參加研究，會如何進行評估施測呢? 會有侵入性治療嗎?', ['可以','LINE',]);
+        TestFDT004.verifyAllFaqAccordions();
 
         //bugs 
         TestFDT004.verifyContactButtonCanTrigger();
