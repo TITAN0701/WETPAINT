@@ -1,19 +1,17 @@
 const aboutIntroTexts = [
     '本站',
     '介紹',
-    '現有發展遲緩兒的發現，主要需靠專業醫療人員進行一連串的多面向評估與鑑定，臺灣雖已建立發展監測與篩檢作法',
-    '但不同場域間落實與宣導仍有進步空間，其主要原因包含城鄉特質及需求不同，偏鄉地區須建構更多早療資源和支持',
-    '透過跨專業及跨單位合作，發展具人工智能之兒童發展遲緩快速辨識系統',
-    '利用大數據及人工智慧辨識可預防的風險因素及早期表徵',
-    '進行早期篩檢、評估，與診治方法之建議，以提供完整的多面向功能評估',
-    '提升兒童重大疾病早期介入、早期治療的成效，共同提升兒童健康促進及相關產業發展',
+    `現有發展遲緩兒的發現，主要需靠專業醫療人員進行一連串的多面向評估與鑑定，臺灣雖已建立發展監測與篩檢作法，但不同場域間落實與宣導仍有進步空間，其主要原因包含城鄉特質及需求不同，偏鄉地區須建構更多早療資源和支持.
+透過跨專業及跨單位合作，發展具人工智能之兒童發展遲緩快速辨識系統，利用大數據及人工智慧辨識可預防的風險因素及早期表徵，進行早期篩檢、評估，與診治方法之建議，以提供完整的多面向功能評估，提升兒童重大疾病早期介入、早期治療的成效，共同提升兒童健康促進及相關產業發展。`,
     '黃金成長期，不錯過每一個早期徵兆',
     '及早發現、及早治療，一起把握孩子的黃金發展期',
     '線上系統，輕鬆使用，提供遠距醫療評估偏鄉就醫不便兒童',
     'AI智慧分析，全面偵測孩子的發展狀況',
     '與家長合作，早期發現遲緩，提供專業的初步評估',
     '合作單位',
-    '本網站為政府科技發展年度綱要計畫補助款支持，衛生福利部指導，由國家衛生研究院、台灣基督長老教會馬偕醫療財團法人馬偕醫院、國立臺北科技大學共同執行',
+    '本網站為政府科技發展年度綱要計畫補助款支持',
+    '衛生福利部指導',
+    '由國家衛生研究院、台灣基督長老教會馬偕醫療財團法人馬偕醫院、國立臺北科技大學共同執行',
 ];
 
 const teamSections = [
@@ -139,6 +137,10 @@ function verifyVisibleText(text, options = {}) {
     const rootSelector = options.root || 'body';
     const timeout = options.timeout;
     const getOptions = timeout ? { timeout } : {};
+    const normalizedExpectedTexts = expectedTexts
+        .flatMap((expectedText) => String(expectedText).split(/\r?\n/))
+        .map(normalizeText)
+        .filter(Boolean);
 
     cy.get(rootSelector, getOptions).then(($root) => {
         const root = $root[0];
@@ -160,7 +162,6 @@ function verifyVisibleText(text, options = {}) {
         }
 
         let foundMatch;
-        const normalizedExpectedTexts = expectedTexts.map(normalizeText);
 
         return cy.wrap(scrollPositions).each((position) => {
             if (foundMatch) {
